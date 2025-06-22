@@ -16,11 +16,11 @@ class FleetAuditor:
         self.fuel_data = None
         self.job_data = None
     
-    def load_data(self, gps_df: pd.DataFrame, fuel_df: pd.DataFrame, job_df: pd.DataFrame):
+    def load_data(self, gps_df: pd.DataFrame = None, fuel_df: pd.DataFrame = None, job_df: pd.DataFrame = None):
         """Load normalized data from parsers"""
-        self.gps_data = gps_df.copy()
-        self.fuel_data = fuel_df.copy()
-        self.job_data = job_df.copy()
+        self.gps_data = gps_df.copy() if gps_df is not None else None
+        self.fuel_data = fuel_df.copy() if fuel_df is not None else None
+        self.job_data = job_df.copy() if job_df is not None else None
         self.violations = []
     
     def detect_fuel_theft(self, distance_threshold_miles: float = 1.0, 
@@ -161,8 +161,8 @@ class FleetAuditor:
     
     def run_full_audit(self) -> Dict[str, List[Dict]]:
         """Run all violation detection algorithms and return results"""
-        if not all([self.gps_data is not None, self.fuel_data is not None, self.job_data is not None]):
-            raise ValueError("All data sources (GPS, fuel, jobs) must be loaded before running audit")
+        if not any([self.gps_data is not None, self.fuel_data is not None, self.job_data is not None]):
+            raise ValueError("At least one data source (GPS, fuel, or jobs) must be loaded before running audit")
         
         audit_results = {
             'fuel_theft': self.detect_fuel_theft(),

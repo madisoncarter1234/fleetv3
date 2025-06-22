@@ -1,0 +1,8 @@
+Transaction Date,Site Name,Gallons,Vehicle Number,Card Number,Amount
+2024-06-15 14:30:00,Shell Station - Brooklyn Heights,24.5,TRUCK-001,****1234,$89.75
+2024-06-16 10:45:00,BP Station - Long Island City,18.2,TRUCK-002,****5678,$67.34
+2024-06-15 09:15:00,Exxon - Manhattan Downtown,31.8,TRUCK-003,****9012,$115.42
+2024-06-16 15:20:00,Sunoco - Queens Boulevard,22.1,TRUCK-001,****1234,$81.23
+2024-06-15 16:45:00,Citgo - Brooklyn Navy Yard,19.7,TRUCK-004,****3456,$72.89
+2024-06-16 08:30:00,Shell Station - Midtown,27.3,TRUCK-002,****5678,$98.67
+2024-06-15 11:20:00,Mobile - Upper East Side,15.9,TRUCK-005,****7890,$58.42

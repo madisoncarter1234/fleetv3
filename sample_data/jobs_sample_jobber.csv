@@ -1,0 +1,8 @@
+Job Number,Scheduled Start,Address,Assigned To,Job Status,Client Name
+JOB-2024-001,2024-06-15 09:00:00,456 Broadway New York NY 10013,TRUCK-001,Completed,ABC Property Management
+JOB-2024-002,2024-06-15 11:00:00,123-45 Queens Blvd Elmhurst NY 11373,TRUCK-001,Completed,XYZ Facilities Corp
+JOB-2024-003,2024-06-15 14:00:00,789 Atlantic Ave Brooklyn NY 11238,TRUCK-001,Completed,Brooklyn Office Plaza
+JOB-2024-004,2024-06-16 09:30:00,123-45 Queens Blvd Elmhurst NY 11373,TRUCK-002,Completed,XYZ Facilities Corp
+JOB-2024-005,2024-06-16 14:30:00,789 Atlantic Ave Brooklyn NY 11238,TRUCK-002,Completed,Brooklyn Office Plaza
+JOB-2024-006,2024-06-15 10:00:00,999 Fake Street Nowhere NY 10001,TRUCK-003,Completed,Ghost Client LLC
+JOB-2024-007,2024-06-16 11:00:00,888 Nonexistent Ave Missing NY 10002,TRUCK-004,Completed,Phantom Services Inc

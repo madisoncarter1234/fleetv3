@@ -94,6 +94,28 @@ def main():
     st.markdown('<div class="main-header">🚛 FleetAudit.io</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-header">Automated Fleet Monitoring & Audit Reports</div>', unsafe_allow_html=True)
     
+    # Quick info about data requirements
+    with st.expander("ℹ️ What data do I need for different violation types?"):
+        st.write("""
+        **🚨 Fuel Theft Detection:** Requires GPS logs + Fuel card data
+        - Cross-references fuel purchases with vehicle locations
+        - Flags purchases when vehicle wasn't near gas station
+        
+        **👻 Ghost Job Detection:** Requires GPS logs + Job scheduling data  
+        - Checks if vehicles actually visited scheduled job sites
+        - Identifies jobs marked complete without site visits
+        
+        **⏰ Idle Time Abuse:** Requires GPS logs only
+        - Detects vehicles sitting idle for extended periods
+        - Flags excessive fuel waste from idling
+        
+        **🌙 After-Hours Driving:** Requires GPS logs only
+        - Monitors vehicle usage outside business hours
+        - Catches unauthorized personal use of company vehicles
+        
+        **💡 Tip:** Upload whatever data you have - the system will detect what violations it can analyze!
+        """)
+    
     # Sidebar configuration
     with st.sidebar:
         st.header("⚙️ Configuration")
@@ -301,15 +323,38 @@ def main():
     with tab2:
         st.header("🔍 Run Fleet Audit")
         
-        # Check if all data is loaded
-        data_loaded = all([
+        # Check if at least one data source is loaded
+        has_data = any([
             st.session_state.gps_data is not None,
             st.session_state.fuel_data is not None,
             st.session_state.job_data is not None
         ])
         
-        if not data_loaded:
-            st.warning("⚠️ Please upload all three data files (GPS, Fuel, Jobs) before running the audit.")
+        if not has_data:
+            st.warning("⚠️ Please upload at least one data file (GPS, Fuel, or Jobs) to run an audit.")
+        else:
+            uploaded_data = []
+            if st.session_state.gps_data is not None:
+                uploaded_data.append("GPS logs")
+            if st.session_state.fuel_data is not None:
+                uploaded_data.append("Fuel card data")
+            if st.session_state.job_data is not None:
+                uploaded_data.append("Job logs")
+            
+            st.success(f"✅ Data loaded: {', '.join(uploaded_data)}")
+            
+            # Show which violation types can be detected
+            st.info("**Available Violation Detection:**")
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.session_state.gps_data is not None and st.session_state.fuel_data is not None:
+                    st.write("🚨 Fuel theft detection")
+                if st.session_state.gps_data is not None and st.session_state.job_data is not None:
+                    st.write("👻 Ghost job detection")
+            with col2:
+                if st.session_state.gps_data is not None:
+                    st.write("⏰ Idle time abuse")
+                    st.write("🌙 After-hours driving")
             
             missing_data = []
             if st.session_state.gps_data is None:
@@ -319,9 +364,8 @@ def main():
             if st.session_state.job_data is None:
                 missing_data.append("Job logs")
             
-            st.write(f"**Missing:** {', '.join(missing_data)}")
-        else:
-            st.success("✅ All data files loaded successfully!")
+            if missing_data:
+                st.write(f"**Optional:** Upload {', '.join(missing_data)} for additional violation types")
             
             # Audit configuration
             st.subheader("⚙️ Audit Parameters")
@@ -490,12 +534,12 @@ def main():
             with col2:
                 st.subheader("Actions")
                 
-                # Generate PDF button
-                if st.button("📄 Generate PDF Report", type="primary", use_container_width=True):
-                    with st.spinner("Generating PDF report..."):
+                # Generate Report button
+                if st.button("📄 Generate Report", type="primary", use_container_width=True):
+                    with st.spinner("Generating report..."):
                         try:
                             generator = ReportGenerator()
-                            pdf_path = generator.generate_pdf_report(
+                            report_path = generator.generate_pdf_report(
                                 st.session_state.audit_results,
                                 st.session_state.summary_stats,
                                 st.session_state.company_name,
@@ -503,21 +547,29 @@ def main():
                                 end_date.strftime('%Y-%m-%d')
                             )
                             
-                            st.session_state.report_path = pdf_path
-                            st.success("✅ PDF report generated!")
+                            st.session_state.report_path = report_path
+                            
+                            # Check if it's HTML or PDF
+                            is_html = report_path.endswith('.html')
+                            file_type = "HTML" if is_html else "PDF"
+                            
+                            st.success(f"✅ {file_type} report generated!")
                             
                             # Provide download link
-                            with open(pdf_path, "rb") as pdf_file:
+                            with open(report_path, "rb") as report_file:
+                                file_extension = "html" if is_html else "pdf"
+                                mime_type = "text/html" if is_html else "application/pdf"
+                                
                                 st.download_button(
-                                    label="📥 Download PDF",
-                                    data=pdf_file.read(),
-                                    file_name=f"fleet_audit_report_{datetime.now().strftime('%Y%m%d')}.pdf",
-                                    mime="application/pdf",
+                                    label=f"📥 Download {file_type} Report",
+                                    data=report_file.read(),
+                                    file_name=f"fleet_audit_report_{datetime.now().strftime('%Y%m%d')}.{file_extension}",
+                                    mime=mime_type,
                                     use_container_width=True
                                 )
                         
                         except Exception as e:
-                            st.error(f"Error generating PDF: {str(e)}")
+                            st.error(f"Error generating report: {str(e)}")
                 
                 st.divider()
                 
@@ -544,7 +596,7 @@ def main():
                 elif not recipient_email:
                     st.info("📧 Set recipient email in sidebar to send reports")
                 elif not st.session_state.report_path:
-                    st.info("📄 Generate PDF report first")
+                    st.info("📄 Generate report first")
 
 if __name__ == "__main__":
     main()
