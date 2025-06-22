@@ -98,6 +98,7 @@
         }
         
         .violation-header.fuel-theft { background-color: #e74c3c; }
+        .violation-header.fuel-anomalies { background-color: #e67e22; }
         .violation-header.ghost-jobs { background-color: #f39c12; }
         .violation-header.idle-abuse { background-color: #9b59b6; }
         .violation-header.after-hours { background-color: #1abc9c; }
@@ -207,7 +208,7 @@
         </div>
     </div>
 
-    {% if violations.fuel_theft or violations.ghost_jobs or violations.idle_abuse or violations.after_hours_driving %}
+    {% if violations.fuel_theft or violations.fuel_anomalies or violations.ghost_jobs or violations.idle_abuse or violations.after_hours_driving %}
     <div class="violations-section">
         <h2 style="color: #2c3e50; margin-bottom: 20px;">Detailed Violations</h2>
         
@@ -226,6 +227,31 @@
                     <div class="violation-description">
                         <strong>Location:</strong> {{ violation.location }}<br>
                         <strong>Amount:</strong> {{ violation.gallons }} gallons<br>
+                        {{ violation.description }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if violations.fuel_anomalies %}
+        <div class="violation-type">
+            <div class="violation-header fuel-anomalies">
+                🔬 Fuel Pattern Anomalies ({{ violations.fuel_anomalies|length }} incidents)
+            </div>
+            <div class="violation-list">
+                {% for violation in violations.fuel_anomalies %}
+                <div class="violation-item">
+                    <div class="violation-meta">
+                        <span class="vehicle-id">Vehicle: {{ violation.vehicle_id }}</span>
+                        <span class="timestamp">{{ violation.timestamp.strftime('%m/%d/%Y %H:%M') if violation.timestamp else 'N/A' }}</span>
+                    </div>
+                    <div class="violation-description">
+                        <strong>Type:</strong> {{ violation.anomaly_type.replace('_', ' ').title() }}<br>
+                        <strong>Location:</strong> {{ violation.location }}<br>
+                        {% if violation.gallons %}<strong>Amount:</strong> {{ violation.gallons }} gallons<br>{% endif %}
+                        <strong>Severity:</strong> {{ violation.severity.title() }}<br>
                         {{ violation.description }}
                     </div>
                 </div>

@@ -6,6 +6,7 @@ from .utils import (
     find_gps_near_location, detect_idle_periods, filter_business_hours_violations,
     geocode_address
 )
+from .fuel_only_analyzer import FuelOnlyAnalyzer
 
 class FleetAuditor:
     """Main class for detecting fleet violations"""
@@ -159,7 +160,7 @@ class FleetAuditor:
         
         return filter_business_hours_violations(self.gps_data, start_hour, end_hour)
     
-    def run_full_audit(self) -> Dict[str, List[Dict]]:
+    def run_full_audit(self, enable_fuel_only_analysis: bool = False) -> Dict[str, List[Dict]]:
         """Run all violation detection algorithms and return results"""
         if not any([self.gps_data is not None, self.fuel_data is not None, self.job_data is not None]):
             raise ValueError("At least one data source (GPS, fuel, or jobs) must be loaded before running audit")
@@ -170,6 +171,12 @@ class FleetAuditor:
             'idle_abuse': self.detect_idle_abuse(),
             'after_hours_driving': self.detect_after_hours_driving()
         }
+        
+        # Add fuel-only analysis if enabled and we have fuel data but no GPS
+        if enable_fuel_only_analysis and self.fuel_data is not None:
+            fuel_analyzer = FuelOnlyAnalyzer()
+            fuel_only_results = fuel_analyzer.analyze_fuel_patterns(self.fuel_data)
+            audit_results.update(fuel_only_results)
         
         # Store all violations for reporting
         self.violations = []

@@ -412,6 +412,20 @@ def main():
                 st.write("**Business Hours**")
                 business_start = st.time_input("Start time", value=datetime.strptime("07:00", "%H:%M").time())
                 business_end = st.time_input("End time", value=datetime.strptime("18:00", "%H:%M").time())
+                
+                st.write("**Advanced Options**")
+                # Show fuel-only analysis option if we have fuel data but no GPS
+                if st.session_state.fuel_data is not None and st.session_state.gps_data is None:
+                    enable_fuel_analysis = st.checkbox(
+                        "🔬 Enable Advanced Fuel Pattern Analysis",
+                        value=False,
+                        help="Analyzes fuel card data for suspicious patterns (timing, volume, frequency anomalies)"
+                    )
+                    
+                    if enable_fuel_analysis:
+                        st.info("**💡 Advanced Fuel Analysis will detect:**\n- Unusual purchase times (night/weekend)\n- Abnormal fuel volumes\n- Suspicious purchase frequency\n- Multiple daily purchases\n- Outlier locations")
+                else:
+                    enable_fuel_analysis = False
             
             # Run audit button
             if st.button("🚀 Run Fleet Audit", type="primary", use_container_width=True):
@@ -426,7 +440,7 @@ def main():
                         )
                         
                         # Run audit with custom parameters
-                        audit_results = auditor.run_full_audit()
+                        audit_results = auditor.run_full_audit(enable_fuel_only_analysis=enable_fuel_analysis)
                         summary_stats = auditor.get_summary_stats()
                         
                         # Store results in session state
@@ -478,9 +492,10 @@ def main():
                 )
             
             with col3:
+                fuel_violations = len(results.get('fuel_theft', [])) + len(results.get('fuel_anomalies', []))
                 st.metric(
-                    "Fuel Theft",
-                    len(results.get('fuel_theft', [])),
+                    "Fuel Issues",
+                    fuel_violations,
                     delta=None
                 )
             
@@ -498,6 +513,7 @@ def main():
                 if violations:
                     violation_names = {
                         'fuel_theft': '🚨 Potential Fuel Theft',
+                        'fuel_anomalies': '🔬 Fuel Pattern Anomalies',
                         'ghost_jobs': '👻 Ghost Jobs',
                         'idle_abuse': '⏰ Excessive Idling',
                         'after_hours_driving': '🌙 After Hours Activity'
