@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fleet Audit Report - {{ company_name }}</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #2c3e50;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .report-title {
+            font-size: 20px;
+            color: #34495e;
+            margin-bottom: 5px;
+        }
+        
+        .date-range {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        .summary-section {
+            background-color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .summary-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+        
+        .violations-section {
+            margin-bottom: 30px;
+        }
+        
+        .violation-type {
+            margin-bottom: 25px;
+        }
+        
+        .violation-header {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px 6px 0 0;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .violation-header.fuel-theft { background-color: #e74c3c; }
+        .violation-header.ghost-jobs { background-color: #f39c12; }
+        .violation-header.idle-abuse { background-color: #9b59b6; }
+        .violation-header.after-hours { background-color: #1abc9c; }
+        
+        .violation-list {
+            border: 1px solid #bdc3c7;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            overflow: hidden;
+        }
+        
+        .violation-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #ecf0f1;
+            background: white;
+        }
+        
+        .violation-item:last-child {
+            border-bottom: none;
+        }
+        
+        .violation-item:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        .violation-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .vehicle-id {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .timestamp {
+            color: #7f8c8d;
+        }
+        
+        .violation-description {
+            color: #555;
+            font-size: 14px;
+        }
+        
+        .no-violations {
+            text-align: center;
+            padding: 40px;
+            color: #27ae60;
+            font-size: 16px;
+            background-color: #d5f4e6;
+            border-radius: 8px;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #bdc3c7;
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 12px;
+        }
+        
+        @media print {
+            body { margin: 0; padding: 15px; }
+            .summary-stats { grid-template-columns: repeat(4, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">FleetAudit.io</div>
+        <div class="report-title">Weekly Fleet Audit Report</div>
+        <div class="company-name" style="font-size: 16px; font-weight: bold; margin: 10px 0;">{{ company_name }}</div>
+        <div class="date-range">Report Period: {{ start_date }} to {{ end_date }}</div>
+        <div class="date-range">Generated: {{ generated_date }}</div>
+    </div>
+
+    <div class="summary-section">
+        <div class="summary-title">Executive Summary</div>
+        <div class="summary-stats">
+            <div class="stat-card">
+                <div class="stat-number">{{ summary_stats.total_violations or 0 }}</div>
+                <div class="stat-label">Total Violations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ summary_stats.vehicles_with_violations or 0 }}</div>
+                <div class="stat-label">Vehicles Flagged</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ summary_stats.violations_by_type.get('fuel_theft', 0) }}</div>
+                <div class="stat-label">Fuel Theft</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ summary_stats.violations_by_type.get('ghost_jobs', 0) }}</div>
+                <div class="stat-label">Ghost Jobs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ summary_stats.violations_by_type.get('idle_abuse', 0) }}</div>
+                <div class="stat-label">Idle Abuse</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ summary_stats.violations_by_type.get('after_hours_driving', 0) }}</div>
+                <div class="stat-label">After Hours</div>
+            </div>
+        </div>
+    </div>
+
+    {% if violations.fuel_theft or violations.ghost_jobs or violations.idle_abuse or violations.after_hours_driving %}
+    <div class="violations-section">
+        <h2 style="color: #2c3e50; margin-bottom: 20px;">Detailed Violations</h2>
+        
+        {% if violations.fuel_theft %}
+        <div class="violation-type">
+            <div class="violation-header fuel-theft">
+                🚨 Potential Fuel Theft ({{ violations.fuel_theft|length }} incidents)
+            </div>
+            <div class="violation-list">
+                {% for violation in violations.fuel_theft %}
+                <div class="violation-item">
+                    <div class="violation-meta">
+                        <span class="vehicle-id">Vehicle: {{ violation.vehicle_id }}</span>
+                        <span class="timestamp">{{ violation.timestamp.strftime('%m/%d/%Y %H:%M') if violation.timestamp else 'N/A' }}</span>
+                    </div>
+                    <div class="violation-description">
+                        <strong>Location:</strong> {{ violation.location }}<br>
+                        <strong>Amount:</strong> {{ violation.gallons }} gallons<br>
+                        {{ violation.description }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if violations.ghost_jobs %}
+        <div class="violation-type">
+            <div class="violation-header ghost-jobs">
+                👻 Ghost Jobs ({{ violations.ghost_jobs|length }} incidents)
+            </div>
+            <div class="violation-list">
+                {% for violation in violations.ghost_jobs %}
+                <div class="violation-item">
+                    <div class="violation-meta">
+                        <span class="vehicle-id">Job: {{ violation.job_id }} | Driver: {{ violation.driver_id }}</span>
+                        <span class="timestamp">{{ violation.scheduled_time.strftime('%m/%d/%Y %H:%M') if violation.scheduled_time else 'N/A' }}</span>
+                    </div>
+                    <div class="violation-description">
+                        <strong>Address:</strong> {{ violation.address }}<br>
+                        {{ violation.description }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if violations.idle_abuse %}
+        <div class="violation-type">
+            <div class="violation-header idle-abuse">
+                ⏰ Excessive Idling ({{ violations.idle_abuse|length }} incidents)
+            </div>
+            <div class="violation-list">
+                {% for violation in violations.idle_abuse %}
+                <div class="violation-item">
+                    <div class="violation-meta">
+                        <span class="vehicle-id">Vehicle: {{ violation.vehicle_id }}</span>
+                        <span class="timestamp">{{ violation.start_time.strftime('%m/%d/%Y %H:%M') if violation.start_time else 'N/A' }}</span>
+                    </div>
+                    <div class="violation-description">
+                        <strong>Duration:</strong> {{ "%.1f"|format(violation.duration_minutes) }} minutes<br>
+                        <strong>Period:</strong> {{ violation.start_time.strftime('%H:%M') if violation.start_time else 'N/A' }} - {{ violation.end_time.strftime('%H:%M') if violation.end_time else 'N/A' }}<br>
+                        Vehicle was idle for extended period
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if violations.after_hours_driving %}
+        <div class="violation-type">
+            <div class="violation-header after-hours">
+                🌙 After Hours Activity ({{ violations.after_hours_driving|length }} incidents)
+            </div>
+            <div class="violation-list">
+                {% for violation in violations.after_hours_driving %}
+                <div class="violation-item">
+                    <div class="violation-meta">
+                        <span class="vehicle-id">Vehicle: {{ violation.vehicle_id }}</span>
+                        <span class="timestamp">{{ violation.date.strftime('%m/%d/%Y') if violation.date else 'N/A' }}</span>
+                    </div>
+                    <div class="violation-description">
+                        <strong>Time Period:</strong> {{ violation.first_violation_time.strftime('%H:%M') if violation.first_violation_time else 'N/A' }} - {{ violation.last_violation_time.strftime('%H:%M') if violation.last_violation_time else 'N/A' }}<br>
+                        <strong>GPS Records:</strong> {{ violation.total_records }} outside business hours<br>
+                        Vehicle activity detected outside authorized hours
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="no-violations">
+        <h3>✅ No Violations Detected</h3>
+        <p>Great news! No suspicious activity was found during this reporting period.</p>
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        <p>This report was generated by FleetAudit.io automated monitoring system.</p>
+        <p>For questions about this report, please contact your fleet administrator.</p>
+        <p><em>Confidential - This report contains sensitive fleet operation data</em></p>
+    </div>
+</body>
+</html>
