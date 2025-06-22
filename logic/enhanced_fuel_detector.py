@@ -160,27 +160,47 @@ class EnhancedFuelDetector:
                         'confidence': 0.95
                     })
                 
-                # Check 2: Rapid refill (tank should still be full)
+                # Check 2: Overwhelmingly obvious rapid refill scenarios
                 previous_purchases = vehicle_data[vehicle_data['timestamp'] < purchase['timestamp']]
                 if not previous_purchases.empty:
                     last_purchase = previous_purchases.iloc[-1]
                     hours_since_last = (purchase['timestamp'] - last_purchase['timestamp']).total_seconds() / 3600
                     
-                    # If last purchase was large and recent, current large purchase is suspicious
-                    if (hours_since_last < 24 and 
-                        last_purchase['gallons'] > (tank_capacity * 0.8) and 
-                        gallons > (tank_capacity * 0.6)):
+                    # Only flag if EXTREMELY suspicious (much higher thresholds)
+                    suspicious_conditions = [
+                        # Condition 1: Massive purchase after recent fill-up
+                        (hours_since_last < 12 and  # Very recent
+                         last_purchase['gallons'] > (tank_capacity * 0.9) and  # Almost full tank
+                         gallons > (tank_capacity * 1.2)),  # Buying way more than capacity
                         
+                        # Condition 2: Two huge purchases same day
+                        (hours_since_last < 8 and  # Same work day
+                         last_purchase['gallons'] > tank_capacity and  # Already exceeded capacity
+                         gallons > tank_capacity),  # Doing it again
+                        
+                        # Condition 3: Overnight fill-up followed by morning excess
+                        (hours_since_last < 16 and  # Since yesterday evening
+                         last_purchase['timestamp'].hour >= 18 and  # Evening purchase  
+                         purchase['timestamp'].hour <= 10 and  # Morning purchase
+                         last_purchase['gallons'] > (tank_capacity * 0.8) and  # Good fill-up
+                         gallons > (tank_capacity * 0.9))  # Another near-full tank
+                    ]
+                    
+                    if any(suspicious_conditions):
+                        total_gallons = last_purchase['gallons'] + gallons
                         violations.append({
                             'vehicle_id': vehicle_id,
                             'timestamp': purchase['timestamp'],
                             'violation_type': 'fuel_theft',
-                            'detection_method': 'rapid_refill',
-                            'description': f"Large refill ({gallons:.1f} gal) only {hours_since_last:.1f} hours after previous large purchase ({last_purchase['gallons']:.1f} gal) - tank should still be full",
+                            'detection_method': 'obvious_rapid_refill',
+                            'description': f"Extremely suspicious: {gallons:.1f} gallons purchased only {hours_since_last:.1f} hours after {last_purchase['gallons']:.1f} gallon purchase. Total: {total_gallons:.1f} gallons in {hours_since_last:.1f} hours - far exceeds normal vehicle consumption",
                             'location': purchase['location'],
                             'gallons': gallons,
+                            'previous_gallons': last_purchase['gallons'],
+                            'hours_between': hours_since_last,
+                            'total_gallons': total_gallons,
                             'severity': 'high',
-                            'confidence': 0.90
+                            'confidence': 0.95
                         })
         
         return violations
@@ -355,37 +375,37 @@ class EnhancedFuelDetector:
                 estimated_gallons = purchase['amount'] / self.avg_fuel_price
                 tank_capacity = self.vehicle_capacities.get(vehicle_id, self.default_tank_capacity)
                 
-                # Check if estimated gallons exceed tank capacity
-                if estimated_gallons > tank_capacity * 1.2:  # 20% buffer for price variation
+                # Only flag overwhelmingly obvious volume excess (much higher threshold)
+                if estimated_gallons > tank_capacity * 1.6:  # 60% over capacity (was 20%)
                     violations.append({
                         'vehicle_id': vehicle_id,
                         'timestamp': purchase['timestamp'],
                         'violation_type': 'fuel_theft',
                         'detection_method': 'estimated_volume_excess',
-                        'description': f"Purchase amount ${purchase['amount']:.2f} suggests ~{estimated_gallons:.1f} gallons (estimated), exceeding typical tank capacity ({tank_capacity} gal) - may include personal purchases",
+                        'description': f"Purchase amount ${purchase['amount']:.2f} suggests ~{estimated_gallons:.1f} gallons (estimated), far exceeding tank capacity ({tank_capacity} gal) - likely filling multiple vehicles or personal purchases",
                         'location': purchase['location'],
                         'amount': purchase['amount'],
                         'estimated_gallons': estimated_gallons,
-                        'severity': 'medium',
-                        'confidence': 0.65
+                        'severity': 'high',
+                        'confidence': 0.80
                     })
                 
-                # Check for unusually high amounts for this vehicle
+                # Check for overwhelmingly obvious amount deviations (higher threshold)
                 vehicle_amounts = vehicle_data['amount'].dropna()
-                if len(vehicle_amounts) >= 3:
+                if len(vehicle_amounts) >= 5:  # Need more history (was 3)
                     avg_amount = vehicle_amounts.mean()
-                    if purchase['amount'] > avg_amount * 2:  # Double normal amount
+                    if purchase['amount'] > avg_amount * 3:  # 3x normal (was 2x)
                         violations.append({
                             'vehicle_id': vehicle_id,
                             'timestamp': purchase['timestamp'],
                             'violation_type': 'fuel_theft',
-                            'detection_method': 'amount_pattern_deviation',
-                            'description': f"Purchase amount ${purchase['amount']:.2f} is significantly higher than vehicle's typical ${avg_amount:.2f} - may include non-fuel items",
+                            'detection_method': 'extreme_amount_deviation',
+                            'description': f"Purchase amount ${purchase['amount']:.2f} is extremely high compared to vehicle's typical ${avg_amount:.2f} (3x normal) - likely includes significant non-fuel purchases",
                             'location': purchase['location'],
                             'amount': purchase['amount'],
                             'typical_amount': avg_amount,
-                            'severity': 'medium',
-                            'confidence': 0.70
+                            'severity': 'high',
+                            'confidence': 0.85
                         })
         
         return violations

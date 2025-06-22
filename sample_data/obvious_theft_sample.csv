@@ -1,0 +1,12 @@
+Transaction Date,Site Name,Gallons,Vehicle Number,Card Number,Amount
+2024-06-17 18:30:00,Shell Station - Downtown,24.5,TRUCK-001,****1234,$85.75
+2024-06-18 07:15:00,BP Station - Same Area,28.2,TRUCK-001,****1234,$98.70
+2024-06-18 19:45:00,Mobile Station - Highway,22.8,TRUCK-002,****5678,$79.80
+2024-06-19 02:30:00,24hr Station - Same City,45.3,TRUCK-002,****5678,$158.55
+2024-06-19 15:20:00,Sunoco - Downtown,18.7,TRUCK-003,****9012,$65.45
+2024-06-19 16:45:00,Shell - Across Street,31.2,TRUCK-003,****9012,$109.20
+2024-06-19 17:15:00,Exxon - Same Block,25.8,TRUCK-003,****9012,$90.30
+2024-06-20 09:30:00,Citgo - Industrial,23.1,TRUCK-004,****3456,$80.85
+2024-06-20 11:15:00,BP - Same Area,27.9,TRUCK-004,****3456,$97.65
+2024-06-21 08:00:00,Shell - Downtown,19.5,TRUCK-005,****7890,$68.25
+2024-06-21 08:45:00,Mobile - Same Street,31.7,TRUCK-005,****7890,$110.95
