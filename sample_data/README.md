@@ -45,6 +45,28 @@ These sample data files are designed to demonstrate FleetAudit.io's violation de
 
 This demonstrates FleetAudit.io can detect real fleet management issues and generate actionable reports for your customers.
 
+## 🎯 **Data Quality Tiers - Test Different Scenarios:**
+
+### **Tier 1: Premium Data (`enhanced_fuel_theft_sample.csv`)**
+- **Contains:** Amount + Gallons + Location + Timestamp
+- **Detection:** Full enhanced detection (95% confidence)
+- **Catches:** Volume violations, price anomalies, pattern deviations
+
+### **Tier 2: Good Data (`fuel_amount_only_sample.csv`)**  
+- **Contains:** Amount + Location + Timestamp (no gallons)
+- **Detection:** Financial pattern analysis (80% confidence)
+- **Catches:** Estimated volume violations, amount pattern deviations
+
+### **Tier 3: Moderate Data (`fuel_gallons_only_sample.csv`)**
+- **Contains:** Gallons + Location + Timestamp (no amount)
+- **Detection:** Volume analysis only (70% confidence)  
+- **Catches:** Tank capacity violations, volume patterns
+
+### **Tier 4: Basic Data (`fuel_basic_sample.csv`)**
+- **Contains:** Location + Timestamp only
+- **Detection:** Timing/frequency analysis (50% confidence)
+- **Catches:** After-hours purchases, multiple daily transactions
+
 ## Demo Script:
 
-"Here's a sample week of data from a small NYC delivery company. As you can see, FleetAudit.io detected several concerning patterns including unauthorized after-hours vehicle use, excessive idling costing fuel, and potential fraud with ghost job entries. The system automatically flagged these for investigation, potentially saving thousands in operational costs."
+"FleetAudit.io automatically adapts to whatever data quality you have. Whether you have a premium fuel card system with full transaction details, or just basic purchase records, we provide the best possible theft detection for your data. The system clearly shows confidence levels and suggests how to improve detection by upgrading your data sources."

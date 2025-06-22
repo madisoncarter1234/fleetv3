@@ -23,31 +23,93 @@ class EnhancedFuelDetector:
     
     def detect_enhanced_fuel_theft(self, fuel_df: pd.DataFrame, gps_df: pd.DataFrame = None) -> List[Dict]:
         """
-        Enhanced fuel theft detection using multiple layers:
-        1. Volume analysis (tank capacity, refill frequency)
-        2. Price analysis (cost vs gallons)
-        3. Behavioral patterns (driver baselines)
-        4. GPS validation (if available)
+        Enhanced fuel theft detection with graceful degradation:
+        - Automatically adapts to available data quality
+        - Provides best possible detection for each customer's data
+        - Clear confidence levels based on data completeness
         """
         violations = []
         
         if fuel_df is None or fuel_df.empty:
             return violations
         
-        # Ensure required columns exist and have proper types
+        # Prepare and analyze data quality
         fuel_df = self._prepare_fuel_data(fuel_df)
+        data_tier = self._assess_data_quality(fuel_df)
         
-        # Run all detection layers
-        violations.extend(self._detect_volume_violations(fuel_df))
-        violations.extend(self._detect_price_violations(fuel_df))
-        violations.extend(self._detect_pattern_violations(fuel_df))
-        violations.extend(self._detect_frequency_violations(fuel_df))
+        # Apply detection methods based on data tier
+        if data_tier['tier'] >= 1:  # Has both amount and gallons
+            violations.extend(self._detect_volume_violations(fuel_df))
+            violations.extend(self._detect_price_violations(fuel_df))
+            violations.extend(self._detect_pattern_violations(fuel_df))
+            violations.extend(self._detect_frequency_violations(fuel_df))
+            
+        elif data_tier['tier'] >= 2:  # Has amount only
+            violations.extend(self._detect_amount_only_violations(fuel_df))
+            violations.extend(self._detect_pattern_violations(fuel_df))
+            violations.extend(self._detect_frequency_violations(fuel_df))
+            
+        elif data_tier['tier'] >= 3:  # Has gallons only
+            violations.extend(self._detect_volume_violations(fuel_df))
+            violations.extend(self._detect_pattern_violations(fuel_df))
+            
+        else:  # Minimal data - timing/frequency only
+            violations.extend(self._detect_basic_violations(fuel_df))
         
-        # Add GPS validation if available
+        # Add data quality context to violations
+        for violation in violations:
+            violation['data_tier'] = data_tier['tier']
+            violation['data_quality'] = data_tier['description']
+            
+            # Adjust confidence based on data quality
+            if 'confidence' in violation:
+                violation['confidence'] *= data_tier['confidence_multiplier']
+        
+        # Add GPS validation if available (boosts confidence)
         if gps_df is not None and not gps_df.empty:
-            violations.extend(self._detect_location_violations(fuel_df, gps_df))
+            gps_violations = self._detect_location_violations(fuel_df, gps_df)
+            for violation in gps_violations:
+                violation['confidence'] = min(0.95, violation.get('confidence', 0.8) + 0.1)
+            violations.extend(gps_violations)
         
         return violations
+    
+    def _assess_data_quality(self, fuel_df: pd.DataFrame) -> Dict:
+        """Assess the quality of fuel data and determine detection tier"""
+        
+        has_amount = 'amount' in fuel_df.columns and not fuel_df['amount'].isna().all()
+        has_gallons = 'gallons' in fuel_df.columns and not fuel_df['gallons'].isna().all()
+        has_location = 'location' in fuel_df.columns and not fuel_df['location'].isna().all()
+        has_timestamp = 'timestamp' in fuel_df.columns and not fuel_df['timestamp'].isna().all()
+        
+        if has_amount and has_gallons:
+            return {
+                'tier': 1,
+                'description': 'Premium Data Quality (Amount + Gallons)',
+                'confidence_multiplier': 1.0,
+                'capabilities': ['volume_analysis', 'price_analysis', 'pattern_analysis', 'frequency_analysis']
+            }
+        elif has_amount:
+            return {
+                'tier': 2, 
+                'description': 'Good Data Quality (Amount Only)',
+                'confidence_multiplier': 0.8,
+                'capabilities': ['amount_analysis', 'pattern_analysis', 'frequency_analysis']
+            }
+        elif has_gallons:
+            return {
+                'tier': 3,
+                'description': 'Moderate Data Quality (Gallons Only)', 
+                'confidence_multiplier': 0.7,
+                'capabilities': ['volume_analysis', 'pattern_analysis']
+            }
+        else:
+            return {
+                'tier': 4,
+                'description': 'Basic Data Quality (Timing Only)',
+                'confidence_multiplier': 0.5,
+                'capabilities': ['timing_analysis', 'basic_patterns']
+            }
     
     def _prepare_fuel_data(self, fuel_df: pd.DataFrame) -> pd.DataFrame:
         """Prepare and validate fuel data"""
@@ -277,6 +339,151 @@ class EnhancedFuelDetector:
         # by adding confidence scores based on volume/price red flags
         
         return violations
+    
+    def _detect_amount_only_violations(self, fuel_df: pd.DataFrame) -> List[Dict]:
+        """Detect violations using only dollar amounts (estimate gallons)"""
+        violations = []
+        
+        for vehicle_id, vehicle_data in fuel_df.groupby('vehicle_id'):
+            vehicle_data = vehicle_data.sort_values('timestamp')
+            
+            for idx, purchase in vehicle_data.iterrows():
+                if pd.isna(purchase.get('amount')) or purchase['amount'] <= 0:
+                    continue
+                
+                # Estimate gallons from amount
+                estimated_gallons = purchase['amount'] / self.avg_fuel_price
+                tank_capacity = self.vehicle_capacities.get(vehicle_id, self.default_tank_capacity)
+                
+                # Check if estimated gallons exceed tank capacity
+                if estimated_gallons > tank_capacity * 1.2:  # 20% buffer for price variation
+                    violations.append({
+                        'vehicle_id': vehicle_id,
+                        'timestamp': purchase['timestamp'],
+                        'violation_type': 'fuel_theft',
+                        'detection_method': 'estimated_volume_excess',
+                        'description': f"Purchase amount ${purchase['amount']:.2f} suggests ~{estimated_gallons:.1f} gallons (estimated), exceeding typical tank capacity ({tank_capacity} gal) - may include personal purchases",
+                        'location': purchase['location'],
+                        'amount': purchase['amount'],
+                        'estimated_gallons': estimated_gallons,
+                        'severity': 'medium',
+                        'confidence': 0.65
+                    })
+                
+                # Check for unusually high amounts for this vehicle
+                vehicle_amounts = vehicle_data['amount'].dropna()
+                if len(vehicle_amounts) >= 3:
+                    avg_amount = vehicle_amounts.mean()
+                    if purchase['amount'] > avg_amount * 2:  # Double normal amount
+                        violations.append({
+                            'vehicle_id': vehicle_id,
+                            'timestamp': purchase['timestamp'],
+                            'violation_type': 'fuel_theft',
+                            'detection_method': 'amount_pattern_deviation',
+                            'description': f"Purchase amount ${purchase['amount']:.2f} is significantly higher than vehicle's typical ${avg_amount:.2f} - may include non-fuel items",
+                            'location': purchase['location'],
+                            'amount': purchase['amount'],
+                            'typical_amount': avg_amount,
+                            'severity': 'medium',
+                            'confidence': 0.70
+                        })
+        
+        return violations
+    
+    def _detect_basic_violations(self, fuel_df: pd.DataFrame) -> List[Dict]:
+        """Basic detection using only timing and frequency patterns"""
+        violations = []
+        
+        # Group by vehicle for frequency analysis
+        for vehicle_id, vehicle_data in fuel_df.groupby('vehicle_id'):
+            vehicle_data = vehicle_data.sort_values('timestamp')
+            
+            # Check for multiple purchases same day
+            daily_groups = vehicle_data.groupby(vehicle_data['timestamp'].dt.date)
+            
+            for date, day_purchases in daily_groups:
+                if len(day_purchases) > 2:  # More than 2 purchases per day is suspicious
+                    violations.append({
+                        'vehicle_id': vehicle_id,
+                        'timestamp': day_purchases['timestamp'].min(),
+                        'violation_type': 'fuel_theft',
+                        'detection_method': 'frequency_anomaly',
+                        'description': f"{len(day_purchases)} fuel card transactions on {date} - unusual frequency may indicate personal use or fraud",
+                        'location': 'Multiple locations',
+                        'purchase_count': len(day_purchases),
+                        'severity': 'low',
+                        'confidence': 0.50
+                    })
+            
+            # Check for unusual timing
+            for idx, purchase in vehicle_data.iterrows():
+                hour = purchase['timestamp'].hour
+                day_of_week = purchase['timestamp'].weekday()
+                
+                # Flag very early morning or late night purchases
+                if hour < 5 or hour > 23:
+                    violations.append({
+                        'vehicle_id': vehicle_id,
+                        'timestamp': purchase['timestamp'],
+                        'violation_type': 'fuel_theft',
+                        'detection_method': 'timing_anomaly',
+                        'description': f"Fuel purchase at {hour:02d}:{purchase['timestamp'].minute:02d} - outside typical business hours",
+                        'location': purchase['location'],
+                        'severity': 'low',
+                        'confidence': 0.45
+                    })
+        
+        return violations
+    
+    def get_data_quality_summary(self, fuel_df: pd.DataFrame) -> Dict:
+        """Generate summary of data quality and detection capabilities"""
+        if fuel_df is None or fuel_df.empty:
+            return {'tier': 0, 'description': 'No data available'}
+        
+        data_tier = self._assess_data_quality(fuel_df)
+        
+        summary = {
+            'data_tier': data_tier['tier'],
+            'description': data_tier['description'],
+            'confidence_multiplier': data_tier['confidence_multiplier'],
+            'capabilities': data_tier['capabilities'],
+            'total_records': len(fuel_df),
+            'date_range': {
+                'start': fuel_df['timestamp'].min() if 'timestamp' in fuel_df.columns else None,
+                'end': fuel_df['timestamp'].max() if 'timestamp' in fuel_df.columns else None
+            },
+            'improvement_suggestions': self._get_improvement_suggestions(data_tier)
+        }
+        
+        return summary
+    
+    def _get_improvement_suggestions(self, data_tier: Dict) -> List[str]:
+        """Suggest how customer can improve their data quality"""
+        suggestions = []
+        
+        if data_tier['tier'] == 4:
+            suggestions.extend([
+                "Add fuel amount or gallon data to enable volume analysis",
+                "Include transaction amounts to detect price anomalies",
+                "Consider upgrading to a fuel card that tracks gallons"
+            ])
+        elif data_tier['tier'] == 3:
+            suggestions.extend([
+                "Add transaction amounts to enable price analysis",
+                "Include cost data to detect mixed purchases (fuel + personal items)"
+            ])
+        elif data_tier['tier'] == 2:
+            suggestions.extend([
+                "Add gallon quantities to enable precise volume analysis",
+                "Include fuel quantities to detect tank capacity violations"
+            ])
+        elif data_tier['tier'] == 1:
+            suggestions.extend([
+                "Add GPS tracking for location-based validation",
+                "Consider real-time fuel price data for more accurate analysis"
+            ])
+        
+        return suggestions
     
     def get_enhanced_summary(self, violations: List[Dict]) -> Dict:
         """Generate summary with confidence levels and financial impact"""

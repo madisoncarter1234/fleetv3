@@ -1,0 +1,11 @@
+Transaction Date,Site Name,Vehicle Number,Card Number
+2024-06-15 02:30:00,24hr Station - Highway,TRUCK-001,****1234
+2024-06-15 14:30:00,BP Station - Downtown,TRUCK-001,****1234
+2024-06-15 14:45:00,Shell - Same Block,TRUCK-001,****1234
+2024-06-16 08:15:00,Mobile Station - Midtown,TRUCK-001,****1234
+2024-06-16 23:45:00,Late Night Station,TRUCK-002,****5678
+2024-06-17 10:20:00,Sunoco - Downtown,TRUCK-002,****5678
+2024-06-17 10:35:00,Exxon - Across Street,TRUCK-002,****5678
+2024-06-17 10:50:00,Shell - Same Area,TRUCK-002,****5678
+2024-06-18 11:30:00,Citgo - Industrial,TRUCK-003,****9012
+2024-06-19 01:20:00,All Night Fuel,TRUCK-003,****9012

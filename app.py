@@ -366,6 +366,29 @@ def main():
             
             if available_violations:
                 st.success(f"**Ready to detect:** {', '.join(available_violations)}")
+                
+                # Show fuel data quality if fuel data is loaded
+                if st.session_state.fuel_data is not None:
+                    from logic.enhanced_fuel_detector import EnhancedFuelDetector
+                    detector = EnhancedFuelDetector()
+                    quality_summary = detector.get_data_quality_summary(st.session_state.fuel_data)
+                    
+                    with st.expander("📊 Fuel Data Quality Assessment"):
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.write(f"**Data Tier:** {quality_summary['data_tier']}/4")
+                            st.write(f"**Quality:** {quality_summary['description']}")
+                            st.write(f"**Records:** {quality_summary['total_records']}")
+                        
+                        with col2:
+                            if quality_summary.get('improvement_suggestions'):
+                                st.write("**💡 To improve detection:**")
+                                for suggestion in quality_summary['improvement_suggestions'][:2]:
+                                    st.write(f"• {suggestion}")
+                                    
+                        if quality_summary['data_tier'] < 4:
+                            confidence = int(quality_summary['confidence_multiplier'] * 100)
+                            st.info(f"Current detection confidence: {confidence}% - {quality_summary['description']}")
             
             missing_data = []
             if st.session_state.gps_data is None:
