@@ -2,10 +2,17 @@ import os
 import pandas as pd
 from datetime import datetime, timedelta
 from jinja2 import Template, Environment, FileSystemLoader
-from weasyprint import HTML, CSS
-from weasyprint.text.fonts import FontConfiguration
 from typing import Dict, List, Optional
 import tempfile
+
+# Try to import WeasyPrint, but continue if not available
+try:
+    from weasyprint import HTML, CSS
+    from weasyprint.text.fonts import FontConfiguration
+    WEASYPRINT_AVAILABLE = True
+except ImportError:
+    WEASYPRINT_AVAILABLE = False
+    print("WeasyPrint not available - PDF generation disabled")
 
 class ReportGenerator:
     """Generate HTML and PDF reports from audit results"""
@@ -57,6 +64,15 @@ class ReportGenerator:
             reports_dir = os.path.join(os.path.dirname(__file__), '..', 'reports')
             os.makedirs(reports_dir, exist_ok=True)
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            
+        if not WEASYPRINT_AVAILABLE:
+            # Fallback: save as HTML if WeasyPrint not available
+            html_output_path = output_path.replace('.pdf', '.html') if output_path else os.path.join(reports_dir, f'fleet_audit_report_{timestamp}.html')
+            with open(html_output_path, 'w', encoding='utf-8') as f:
+                f.write(html_content)
+            return html_output_path
+        
+        if output_path is None:
             output_path = os.path.join(reports_dir, f'fleet_audit_report_{timestamp}.pdf')
         
         # Convert HTML to PDF
