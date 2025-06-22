@@ -226,7 +226,10 @@
                     </div>
                     <div class="violation-description">
                         <strong>Location:</strong> {{ violation.location }}<br>
-                        <strong>Amount:</strong> {{ violation.gallons }} gallons<br>
+                        {% if violation.gallons %}<strong>Amount:</strong> {{ violation.gallons }} gallons<br>{% endif %}
+                        {% if violation.amount %}<strong>Cost:</strong> ${{ "%.2f"|format(violation.amount) }}<br>{% endif %}
+                        {% if violation.detection_method %}<strong>Detection:</strong> {{ violation.detection_method.replace('_', ' ').title() }}<br>{% endif %}
+                        {% if violation.confidence %}<strong>Confidence:</strong> {{ (violation.confidence * 100)|int }}%<br>{% endif %}
                         {{ violation.description }}
                     </div>
                 </div>

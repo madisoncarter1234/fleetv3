@@ -7,6 +7,7 @@ from .utils import (
     geocode_address
 )
 from .fuel_only_analyzer import FuelOnlyAnalyzer
+from .enhanced_fuel_detector import EnhancedFuelDetector
 
 class FleetAuditor:
     """Main class for detecting fleet violations"""
@@ -160,17 +161,28 @@ class FleetAuditor:
         
         return filter_business_hours_violations(self.gps_data, start_hour, end_hour)
     
-    def run_full_audit(self, enable_fuel_only_analysis: bool = False) -> Dict[str, List[Dict]]:
+    def run_full_audit(self, enable_fuel_only_analysis: bool = False, 
+                      enable_enhanced_fuel_detection: bool = True) -> Dict[str, List[Dict]]:
         """Run all violation detection algorithms and return results"""
         if not any([self.gps_data is not None, self.fuel_data is not None, self.job_data is not None]):
             raise ValueError("At least one data source (GPS, fuel, or jobs) must be loaded before running audit")
         
         audit_results = {
-            'fuel_theft': self.detect_fuel_theft(),
             'ghost_jobs': self.detect_ghost_jobs(),
             'idle_abuse': self.detect_idle_abuse(),
             'after_hours_driving': self.detect_after_hours_driving()
         }
+        
+        # Enhanced fuel theft detection (replaces basic GPS-only detection)
+        if self.fuel_data is not None and enable_enhanced_fuel_detection:
+            enhanced_detector = EnhancedFuelDetector()
+            enhanced_fuel_violations = enhanced_detector.detect_enhanced_fuel_theft(
+                self.fuel_data, self.gps_data
+            )
+            audit_results['fuel_theft'] = enhanced_fuel_violations
+        else:
+            # Fallback to basic GPS-only detection
+            audit_results['fuel_theft'] = self.detect_fuel_theft()
         
         # Add fuel-only analysis if enabled and we have fuel data but no GPS
         if enable_fuel_only_analysis and self.fuel_data is not None:

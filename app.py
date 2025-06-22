@@ -97,9 +97,12 @@ def main():
     # Quick info about data requirements
     with st.expander("ℹ️ What data do I need for different violation types?"):
         st.write("""
-        **🚨 Fuel Theft Detection:** Requires GPS logs + Fuel card data
-        - Cross-references fuel purchases with vehicle locations
-        - Flags purchases when vehicle wasn't near gas station
+        **🚨 Enhanced Fuel Theft Detection:** Requires Fuel card data (GPS optional)
+        - **Volume Analysis:** Catches overfilling beyond tank capacity
+        - **Price Analysis:** Detects mixed purchases (fuel + personal items) 
+        - **Pattern Analysis:** Flags unusual amounts for each driver
+        - **GPS Validation:** Confirms vehicle was at gas station (if GPS available)
+        - **Much harder to circumvent** than GPS-only detection
         
         **👻 Ghost Job Detection:** Requires GPS logs + Job scheduling data  
         - Checks if vehicles actually visited scheduled job sites
@@ -113,7 +116,11 @@ def main():
         - Monitors vehicle usage outside business hours
         - Catches unauthorized personal use of company vehicles
         
-        **💡 Tip:** Upload whatever data you have - the system will detect what violations it can analyze!
+        **📊 Statistical Pattern Analysis:** Fuel card data only (backup option)
+        - For customers who only have fuel data and no GPS
+        - Detects timing, volume, and frequency anomalies
+        
+        **💡 Tip:** Enhanced fuel detection works with just fuel card data and catches theft that GPS-based systems miss!
         """)
     
     # Sidebar configuration
@@ -414,16 +421,30 @@ def main():
                 business_end = st.time_input("End time", value=datetime.strptime("18:00", "%H:%M").time())
                 
                 st.write("**Advanced Options**")
+                
+                # Enhanced fuel theft detection (always available when fuel data present)
+                if st.session_state.fuel_data is not None:
+                    enable_enhanced_fuel = st.checkbox(
+                        "🔬 Enhanced Fuel Theft Detection",
+                        value=True,
+                        help="Advanced detection using volume analysis, price validation, and behavioral patterns - much harder to circumvent than GPS-only detection"
+                    )
+                    
+                    if enable_enhanced_fuel:
+                        st.info("**💡 Enhanced Detection catches:**\n- Overfilling (more than tank capacity)\n- Mixed purchases (fuel + personal items)\n- Pattern deviations (unusual amounts)\n- Rapid refills (tank should be full)\n- Price anomalies (non-fuel purchases)")
+                else:
+                    enable_enhanced_fuel = False
+                
                 # Show fuel-only analysis option if we have fuel data but no GPS
                 if st.session_state.fuel_data is not None and st.session_state.gps_data is None:
                     enable_fuel_analysis = st.checkbox(
-                        "🔬 Enable Advanced Fuel Pattern Analysis",
+                        "📊 Statistical Fuel Pattern Analysis",
                         value=False,
                         help="Analyzes fuel card data for suspicious patterns (timing, volume, frequency anomalies)"
                     )
                     
                     if enable_fuel_analysis:
-                        st.info("**💡 Advanced Fuel Analysis will detect:**\n- Unusual purchase times (night/weekend)\n- Abnormal fuel volumes\n- Suspicious purchase frequency\n- Multiple daily purchases\n- Outlier locations")
+                        st.info("**💡 Pattern Analysis will detect:**\n- Unusual purchase times (night/weekend)\n- Abnormal fuel volumes\n- Suspicious purchase frequency\n- Multiple daily purchases\n- Outlier locations")
                 else:
                     enable_fuel_analysis = False
             
@@ -440,7 +461,10 @@ def main():
                         )
                         
                         # Run audit with custom parameters
-                        audit_results = auditor.run_full_audit(enable_fuel_only_analysis=enable_fuel_analysis)
+                        audit_results = auditor.run_full_audit(
+                            enable_fuel_only_analysis=enable_fuel_analysis,
+                            enable_enhanced_fuel_detection=enable_enhanced_fuel
+                        )
                         summary_stats = auditor.get_summary_stats()
                         
                         # Store results in session state
