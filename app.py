@@ -11,7 +11,7 @@ from parsers.fuel_parser import FuelParser
 from parsers.job_parser import JobParser
 from logic.matcher import FleetAuditor
 from logic.report_generator import ReportGenerator
-from email.send_email import EmailSender
+from email_service.send_email import EmailSender
 
 # Page configuration
 st.set_page_config(
