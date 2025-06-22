@@ -345,16 +345,40 @@ def main():
             
             # Show which violation types can be detected
             st.info("**Available Violation Detection:**")
+            
+            available_violations = []
+            unavailable_violations = []
+            
+            # Check what's possible with current data
+            if st.session_state.gps_data is not None and st.session_state.fuel_data is not None:
+                available_violations.append("🚨 Fuel theft detection")
+            else:
+                unavailable_violations.append("🚨 Fuel theft (needs GPS + Fuel data)")
+                
+            if st.session_state.gps_data is not None and st.session_state.job_data is not None:
+                available_violations.append("👻 Ghost job detection")
+            else:
+                unavailable_violations.append("👻 Ghost jobs (needs GPS + Job data)")
+                
+            if st.session_state.gps_data is not None:
+                available_violations.append("⏰ Idle time abuse")
+                available_violations.append("🌙 After-hours driving")
+            else:
+                unavailable_violations.append("⏰ Idle abuse (needs GPS data)")
+                unavailable_violations.append("🌙 After-hours driving (needs GPS data)")
+            
             col1, col2 = st.columns(2)
             with col1:
-                if st.session_state.gps_data is not None and st.session_state.fuel_data is not None:
-                    st.write("🚨 Fuel theft detection")
-                if st.session_state.gps_data is not None and st.session_state.job_data is not None:
-                    st.write("👻 Ghost job detection")
+                if available_violations:
+                    st.write("**✅ Can Detect:**")
+                    for violation in available_violations:
+                        st.write(f"• {violation}")
+                        
             with col2:
-                if st.session_state.gps_data is not None:
-                    st.write("⏰ Idle time abuse")
-                    st.write("🌙 After-hours driving")
+                if unavailable_violations:
+                    st.write("**❌ Cannot Detect:**")
+                    for violation in unavailable_violations:
+                        st.write(f"• {violation}")
             
             missing_data = []
             if st.session_state.gps_data is None:
