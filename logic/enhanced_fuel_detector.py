@@ -166,9 +166,18 @@ class EnhancedFuelDetector:
                     })
                 
                 # Check 2: Overwhelmingly obvious rapid refill scenarios
+                # Skip if either timestamp is midnight (date-only data)
+                if (purchase['timestamp'].time() == pd.Timestamp('00:00:00').time()):
+                    continue
+                    
                 previous_purchases = vehicle_data[vehicle_data['timestamp'] < purchase['timestamp']]
                 if not previous_purchases.empty:
                     last_purchase = previous_purchases.iloc[-1]
+                    
+                    # Skip if last purchase is also midnight (date-only data)
+                    if (last_purchase['timestamp'].time() == pd.Timestamp('00:00:00').time()):
+                        continue
+                        
                     hours_since_last = (purchase['timestamp'] - last_purchase['timestamp']).total_seconds() / 3600
                     
                     # Only flag if EXTREMELY suspicious (much higher thresholds)
@@ -352,6 +361,18 @@ class EnhancedFuelDetector:
     def _detect_frequency_violations(self, fuel_df: pd.DataFrame) -> List[Dict]:
         """Detect violations based on purchase frequency"""
         violations = []
+        
+        # Check if timestamps have time information or are date-only
+        valid_timestamps = fuel_df['timestamp'].dropna()
+        if len(valid_timestamps) == 0:
+            return violations
+            
+        timestamps_with_time = valid_timestamps.dt.time != pd.Timestamp('00:00:00').time()
+        has_time_data = timestamps_with_time.any()
+        
+        if not has_time_data:
+            print("Warning: Enhanced fuel detector - All timestamps are midnight (00:00) - likely date-only data. Skipping frequency analysis.")
+            return violations
         
         for vehicle_id, vehicle_data in fuel_df.groupby('vehicle_id'):
             vehicle_data = vehicle_data.sort_values('timestamp')
