@@ -9,9 +9,17 @@ from datetime import datetime
 class AICsvNormalizer:
     """AI-powered CSV normalizer that converts any fuel CSV to consistent schema"""
     
-    def __init__(self, api_key: Optional[str] = None):
-        """Initialize with Claude API key"""
-        self.client = Anthropic(api_key=api_key or os.getenv('ANTHROPIC_API_KEY'))
+    def __init__(self, api_key: Optional[str] = None, use_backend_service: bool = True):
+        """Initialize with Claude API key or backend service"""
+        self.use_backend_service = use_backend_service
+        
+        if use_backend_service:
+            # Use centralized backend service for SaaS
+            from backend.ai_service import FleetAuditAIService
+            self.ai_service = FleetAuditAIService()
+        else:
+            # Direct API access (for development/testing)
+            self.client = Anthropic(api_key=api_key or os.getenv('ANTHROPIC_API_KEY'))
         
         # Target schema that audit logic expects
         self.target_schema = {
@@ -52,7 +60,21 @@ class AICsvNormalizer:
     def _get_ai_column_mapping(self, sample_csv: str) -> Dict[str, str]:
         """Use AI to analyze CSV and map columns to target schema"""
         
-        prompt = f"""
+        if self.use_backend_service:
+            # Use centralized backend service
+            try:
+                result = self.ai_service.normalize_csv_data(sample_csv)
+                if result["success"]:
+                    return result["mapping"]
+                else:
+                    print(f"Backend AI service failed: {result.get('error')}")
+                    return self._fallback_column_mapping(sample_csv)
+            except Exception as e:
+                print(f"Backend service error: {e}")
+                return self._fallback_column_mapping(sample_csv)
+        else:
+            # Direct API access (development mode)
+            prompt = f"""
 You are a CSV analysis expert. Analyze this fuel card transaction CSV sample and map the columns to our target schema.
 
 TARGET SCHEMA (what we need):
@@ -81,30 +103,30 @@ Return ONLY a JSON object with this exact format:
     "amount": "Column Name" or null
 }}
 """
-        
-        try:
-            response = self.client.messages.create(
-                model="claude-3-haiku-20240307",
-                max_tokens=500,
-                temperature=0.1,
-                messages=[{"role": "user", "content": prompt}]
-            )
             
-            mapping_text = response.content[0].text.strip()
-            
-            # Extract JSON from response
-            if '```json' in mapping_text:
-                mapping_text = mapping_text.split('```json')[1].split('```')[0]
-            elif '```' in mapping_text:
-                mapping_text = mapping_text.split('```')[1].split('```')[0]
-            
-            mapping = json.loads(mapping_text)
-            return mapping
-            
-        except Exception as e:
-            print(f"AI mapping failed: {e}")
-            # Fallback to simple heuristics
-            return self._fallback_column_mapping(sample_csv)
+            try:
+                response = self.client.messages.create(
+                    model="claude-3-haiku-20240307",
+                    max_tokens=500,
+                    temperature=0.1,
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                
+                mapping_text = response.content[0].text.strip()
+                
+                # Extract JSON from response
+                if '```json' in mapping_text:
+                    mapping_text = mapping_text.split('```json')[1].split('```')[0]
+                elif '```' in mapping_text:
+                    mapping_text = mapping_text.split('```')[1].split('```')[0]
+                
+                mapping = json.loads(mapping_text)
+                return mapping
+                
+            except Exception as e:
+                print(f"AI mapping failed: {e}")
+                # Fallback to simple heuristics
+                return self._fallback_column_mapping(sample_csv)
     
     def _fallback_column_mapping(self, sample_csv: str) -> Dict[str, str]:
         """Fallback column mapping using simple heuristics"""
