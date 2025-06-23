@@ -643,17 +643,17 @@ def main():
                 if high_severity:
                     with st.expander(f"🚨 **HIGH SEVERITY** ({len(high_severity)} incidents)", expanded=True):
                         for violation in high_severity:
-                            self._display_violation_card(violation)
+                            _display_violation_card(violation)
                 
                 if medium_severity:
                     with st.expander(f"⚠️ **MEDIUM SEVERITY** ({len(medium_severity)} incidents)", expanded=False):
                         for violation in medium_severity:
-                            self._display_violation_card(violation)
+                            _display_violation_card(violation)
                 
                 if low_severity:
                     with st.expander(f"ℹ️ **LOW SEVERITY** ({len(low_severity)} incidents)", expanded=False):
                         for violation in low_severity:
-                            self._display_violation_card(violation)
+                            _display_violation_card(violation)
             
             # Raw data view for debugging
             if st.checkbox("🔧 Show raw audit data (debug)"):
