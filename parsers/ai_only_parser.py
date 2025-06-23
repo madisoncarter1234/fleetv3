@@ -5,10 +5,12 @@ from anthropic import Anthropic
 import os
 
 class AIOnlyParser:
-    """100% AI-powered parser - no manual logic, no bullshit"""
+    """100% AI-powered parser - optimized for cost and performance"""
     
     def __init__(self, api_key: Optional[str] = None):
         self.client = Anthropic(api_key=api_key or os.getenv('ANTHROPIC_API_KEY'))
+        self.primary_model = "claude-3-haiku-20240307"  # Fast & cheap
+        self.fallback_model = "claude-3-5-sonnet-20241022"  # Smart fallback
     
     def parse_and_detect_violations(self, file_path: str, gps_data: str = None, job_data: str = None) -> Dict:
         """
@@ -19,81 +21,124 @@ class AIOnlyParser:
         4. Detect violations
         5. Return clean results
         """
-        # Read raw fuel CSV
+        # Read and truncate fuel CSV for cost optimization
         with open(file_path, 'r') as f:
             fuel_csv_content = f.read()
         
-        # Build prompt with all available data
-        prompt = f"""
-You are a fleet audit expert. Analyze this fuel card CSV and detect violations.
+        # Truncate data if too large (Haiku optimization)
+        fuel_csv_lines = fuel_csv_content.split('\n')
+        if len(fuel_csv_lines) > 200:  # Keep header + first 200 rows max
+            fuel_csv_content = '\n'.join([fuel_csv_lines[0]] + fuel_csv_lines[1:201])
+            print(f"Truncated fuel data to 200 rows for cost optimization")
+        
+        # Build optimized prompt for Haiku
+        prompt = f"""Fleet audit expert. Analyze fuel CSV, detect violations.
 
-FUEL CARD DATA:
+FUEL DATA:
 {fuel_csv_content}"""
         
-        # Add GPS data if provided
+        # Add GPS data if provided (truncated)
         if gps_data:
+            gps_lines = gps_data.split('\n')
+            if len(gps_lines) > 100:  # Truncate GPS data too
+                gps_data = '\n'.join([gps_lines[0]] + gps_lines[1:101])
+                print(f"Truncated GPS data to 100 rows for cost optimization")
+            
             prompt += f"""
 
-GPS TRACKING DATA:
+GPS DATA:
 {gps_data}
 
-ENHANCED DETECTION WITH GPS:
-- Match fuel purchases to actual vehicle locations
-- Detect stolen card use (fuel purchase without truck present)
-- Calculate MPG efficiency and flag anomalies
-- Verify vehicles were actually at gas stations during purchases"""
+GPS CHECKS: Match fuel locations, detect stolen cards, verify truck presence."""
         
-        # Add job data if provided
+        # Add job data if provided (truncated)
         if job_data:
+            job_lines = job_data.split('\n')
+            if len(job_lines) > 50:  # Jobs usually smaller dataset
+                job_data = '\n'.join([job_lines[0]] + job_lines[1:51])
+                print(f"Truncated job data to 50 rows for cost optimization")
+                
             prompt += f"""
 
-JOB ASSIGNMENT DATA:
+JOB DATA:
 {job_data}
 
-ENHANCED DETECTION WITH JOB DATA:
-- Flag fuel purchases far from assigned job sites
-- Detect personal use (fuel near employee homes, not job sites)
-- Match fuel timing with scheduled work hours
-- Identify route deviations for personal errands"""
+JOB CHECKS: Match fuel to assigned sites, detect personal use."""
         
         prompt += """
 
-TASK:
-1. Parse the CSV and understand the columns
-2. Normalize timestamps properly (NO 00:00:00 defaults for malformed times)
-3. Detect fuel theft violations:
-   - Suspicious timing (late night/weekend purchases)
-   - Volume anomalies (overfilling, unusual amounts)
-   - Frequency issues (multiple purchases same day)
-   - Location patterns (outlier locations)
+RULES:
+1. Parse CSV columns (any format)
+2. Fix timestamps (skip malformed like "24:00:00")
+3. Find violations: late night, overfills, rapid refills, personal use
+4. If GPS: check truck was at station
+5. If jobs: check fuel near work sites
 
-CRITICAL: If a time is malformed (like "24:00:00" or "15:03:99"), SKIP that row entirely. Do NOT default to midnight.
+EXAMPLE OUTPUT:
+{
+  "parsed_data": [{"timestamp": "2024-06-15 14:30:00", "location": "Shell #1234", "gallons": 12.5, "vehicle_id": "TRUCK-001", "amount": 45.50}],
+  "violations": [{"type": "after_hours", "vehicle_id": "TRUCK-001", "description": "2:30 AM purchase", "severity": "high"}],
+  "summary": {"total_transactions": 50, "violations_found": 3}
+}
 
-Return ONLY a JSON object:
-{{
-    "parsed_data": [
-        {{"timestamp": "2024-06-15 14:30:00", "location": "Shell #1234", "gallons": 12.5, "vehicle_id": "TRUCK-001", "amount": 45.50}},
-        ...
-    ],
-    "violations": [
-        {{"type": "suspicious_timing", "vehicle_id": "TRUCK-001", "description": "Fuel purchase at 2:30 AM", "severity": "medium", "timestamp": "2024-06-15 02:30:00"}},
-        ...
-    ],
-    "summary": {{"total_transactions": 50, "violations_found": 3, "clean_timestamps": 48}}
-}}
-"""
+Return ONLY JSON:"""
         
+        # Try Haiku first (fast & cheap)
         try:
+            print("🚀 Using Claude Haiku for analysis...")
             response = self.client.messages.create(
-                model="claude-3-5-sonnet-20241022",
-                max_tokens=4000,
+                model=self.primary_model,
+                max_tokens=2000,  # Smaller for Haiku
                 temperature=0.1,
-                timeout=60.0,
+                timeout=30.0,  # Faster timeout
                 messages=[{"role": "user", "content": prompt}]
             )
             
             result_text = response.content[0].text.strip()
+            result = self._parse_ai_response(result_text)
             
+            # Validate Haiku result
+            if result and result.get('parsed_data') and len(result['parsed_data']) > 0:
+                print("✅ Haiku analysis successful!")
+                return result
+            else:
+                raise ValueError("Haiku returned empty or invalid result")
+                
+        except Exception as e:
+            print(f"⚠️ Haiku failed: {e}")
+            print("🎯 Falling back to Sonnet for complex analysis...")
+            
+            # Fallback to Sonnet for edge cases
+            try:
+                response = self.client.messages.create(
+                    model=self.fallback_model,
+                    max_tokens=4000,
+                    temperature=0.1,
+                    timeout=60.0,
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                
+                result_text = response.content[0].text.strip()
+                result = self._parse_ai_response(result_text)
+                
+                if result:
+                    print("✅ Sonnet fallback successful!")
+                    return result
+                else:
+                    raise ValueError("Both Haiku and Sonnet failed")
+                    
+            except Exception as sonnet_error:
+                print(f"❌ Both AI models failed: {sonnet_error}")
+                return {
+                    "error": f"Haiku: {e}, Sonnet: {sonnet_error}",
+                    "parsed_data": [],
+                    "violations": [],
+                    "summary": {"total_transactions": 0, "violations_found": 0}
+                }
+    
+    def _parse_ai_response(self, result_text: str) -> Dict:
+        """Parse AI response and convert to usable format"""
+        try:
             # Extract JSON
             if '```json' in result_text:
                 result_text = result_text.split('```json')[1].split('```')[0]
@@ -112,10 +157,5 @@ Return ONLY a JSON object:
             return result
             
         except Exception as e:
-            print(f"AI parsing failed: {e}")
-            return {
-                "error": str(e),
-                "parsed_data": [],
-                "violations": [],
-                "summary": {"total_transactions": 0, "violations_found": 0, "clean_timestamps": 0}
-            }
+            print(f"Failed to parse AI response: {e}")
+            return None
