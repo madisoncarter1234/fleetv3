@@ -165,6 +165,13 @@ class FuelOnlyAnalyzer:
             
             for date, count in multiple_purchase_days.items():
                 day_purchases = vehicle_data[vehicle_data['timestamp'].dt.date == date]
+                
+                # Skip if any purchase in this group has midnight timestamp (date-only data)
+                has_midnight = (day_purchases['timestamp'].dt.time == pd.Timestamp('00:00:00').time()).any()
+                if has_midnight:
+                    print(f"Warning: Fuel-only analyzer skipping frequency analysis for {vehicle_id} on {date} - contains midnight timestamps (likely date-only data)")
+                    continue
+                    
                 total_gallons = day_purchases['gallons'].sum()
                 
                 # Estimate cost (assume multiple purchases suggest 40% is personal use)
