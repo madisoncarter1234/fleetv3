@@ -96,30 +96,22 @@ def main():
     st.markdown('<div class="sub-header">Automated Fleet Monitoring & Audit Reports</div>', unsafe_allow_html=True)
     
     # Quick info about data requirements
-    with st.expander("ℹ️ What data do I need for different violation types?"):
+    with st.expander("ℹ️ How FleetAudit.io works - simple and automatic"):
         st.write("""
-        **🚨 Enhanced Fuel Theft Detection:** Requires Fuel card data (GPS optional)
-        - **Volume Analysis:** Catches overfilling beyond tank capacity
-        - **Price Analysis:** Detects mixed purchases (fuel + personal items) 
-        - **Pattern Analysis:** Flags unusual amounts for each driver
-        - **GPS Validation:** Confirms vehicle was at gas station (if GPS available)
-        - **Much harder to circumvent** than GPS-only detection
+        **🤖 Step 1: Upload Fuel CSV** (any format - AI handles it automatically)
+        - **Auto-Detection:** AI reads any fuel card format (WEX, Fleetcor, etc.)
+        - **Enhanced Theft Detection:** Volume analysis, price validation, pattern detection
+        - **Statistical Analysis:** Timing, frequency, and location anomalies
         
-        **👻 Ghost Job Detection:** Requires GPS logs + Job scheduling data  
-        - Checks if vehicles actually visited scheduled job sites
-        - Identifies jobs marked complete without site visits
+        **🚨 Step 2: Add GPS Data** (optional but recommended for maximum protection)
+        - **Location Validation:** Confirms vehicle was actually at gas station
+        - **Stolen Card Detection:** Fuel purchases without truck present
+        - **MPG Fraud Detection:** Catches odometer manipulation and fuel dumping
+        - **After-Hours Monitoring:** Unauthorized vehicle use detection
         
-        **⏰ Idle Time Abuse:** Requires GPS logs only
-        - Detects vehicles sitting idle for extended periods
-        - Flags excessive fuel waste from idling
-        
-        **🌙 After-Hours Driving:** Requires GPS logs only
-        - Monitors vehicle usage outside business hours
-        - Catches unauthorized personal use of company vehicles
-        
-        **📊 Statistical Pattern Analysis:** Fuel card data only (backup option)
-        - For customers who only have fuel data and no GPS
-        - Detects timing, volume, and frequency anomalies
+        **👻 Step 3: Add Job Data** (optional for route verification)
+        - **Ghost Job Detection:** Confirms vehicles visited assigned locations
+        - **Route Validation:** Matches job schedules with actual GPS routes
         
         **💡 Tip:** Enhanced fuel detection works with just fuel card data and catches theft that GPS-based systems miss!
         """)
@@ -233,27 +225,7 @@ def main():
                 **💡 Most fleet fuel card systems export gallons data** - check your online portal for "transaction export" or "detailed reports"
                 """)
             
-            # AI parsing option (universal)
-            use_ai_parsing = st.checkbox(
-                "🤖 Enable AI-Smart CSV Parsing",
-                value=True,
-                help="Let AI automatically understand any CSV format (requires ANTHROPIC_API_KEY)"
-            )
-            
-            if not use_ai_parsing:
-                fuel_provider = st.selectbox(
-                    "Fuel Card Provider (Manual)",
-                    ["auto-detect", "wex", "fleetcor", "fuelman", "generic"],
-                    key="fuel_provider",
-                    help="Manual parsing - only use if AI parsing fails"
-                )
-            
-            # AI insights option
-            use_ai_insights = st.checkbox(
-                "🧠 Enable AI Violation Insights",
-                value=False,
-                help="Add detailed AI analysis explaining why violations look suspicious (requires ANTHROPIC_API_KEY)"
-            )
+            # Simplified - always use AI parsing, no options needed
             
             fuel_file = st.file_uploader(
                 "Choose Fuel CSV file",
@@ -269,13 +241,8 @@ def main():
                         tmp_file.write(fuel_file.getvalue())
                         tmp_path = tmp_file.name
                     
-                    # Parse fuel data
-                    if use_ai_parsing:
-                        fuel_data = FuelParser.parse_with_ai(tmp_path)
-                    elif fuel_provider == "auto-detect":
-                        fuel_data = FuelParser.auto_parse(tmp_path)
-                    else:
-                        fuel_data = getattr(FuelParser, f'parse_{fuel_provider}')(tmp_path)
+                    # Always use AI parsing - handles any CSV format automatically
+                    fuel_data = FuelParser.parse_with_ai(tmp_path)
                     
                     st.session_state.fuel_data = fuel_data
                     st.success(f"✅ Fuel data loaded: {len(fuel_data)} records")
@@ -501,46 +468,13 @@ def main():
                 business_start = st.time_input("Start time", value=datetime.strptime("07:00", "%H:%M").time())
                 business_end = st.time_input("End time", value=datetime.strptime("18:00", "%H:%M").time())
                 
-                st.write("**Advanced Options**")
-                
-                # Enhanced fuel theft detection (always available when fuel data present)
+                # Simplified - automatically run all available detections
                 if st.session_state.fuel_data is not None:
-                    enable_enhanced_fuel = st.checkbox(
-                        "🔬 Enhanced Fuel Theft Detection",
-                        value=True,
-                        help="Advanced detection using volume analysis, price validation, and behavioral patterns - much harder to circumvent than GPS-only detection"
-                    )
-                    
-                    if enable_enhanced_fuel:
-                        st.info("**💡 Enhanced Detection catches:**\n- Overfilling (more than tank capacity)\n- Mixed purchases (fuel + personal items)\n- Pattern deviations (unusual amounts)\n- Rapid refills (tank should be full)\n- Price anomalies (non-fuel purchases)")
-                else:
-                    enable_enhanced_fuel = False
-                
-                # MPG Analysis option if we have both GPS and fuel data
-                if st.session_state.gps_data is not None and st.session_state.fuel_data is not None:
-                    enable_mpg_analysis = st.checkbox(
-                        "🏃 MPG Fraud Detection",
-                        value=True,
-                        help="Advanced detection using miles per gallon analysis to catch odometer fraud, fuel dumping, and idle refills"
-                    )
-                    
-                    if enable_mpg_analysis:
-                        st.info("**💡 MPG Analysis detects:**\n- Odometer manipulation (false mileage reports)\n- Fuel dumping (fuel sold/transferred elsewhere)\n- Excessive idling (poor fuel efficiency)\n- Idle refills (fuel used but no miles driven)")
-                else:
-                    enable_mpg_analysis = False
-                
-                # Show fuel-only analysis option if we have fuel data but no GPS
-                if st.session_state.fuel_data is not None and st.session_state.gps_data is None:
-                    enable_fuel_analysis = st.checkbox(
-                        "📊 Statistical Fuel Pattern Analysis",
-                        value=False,
-                        help="Analyzes fuel card data for suspicious patterns (timing, volume, frequency anomalies)"
-                    )
-                    
-                    if enable_fuel_analysis:
-                        st.info("**💡 Pattern Analysis will detect:**\n- Unusual purchase times (night/weekend)\n- Abnormal fuel volumes\n- Suspicious purchase frequency\n- Multiple daily purchases\n- Outlier locations")
-                else:
-                    enable_fuel_analysis = False
+                    st.success("**🔍 Automatic Detection Enabled:**")
+                    if st.session_state.gps_data is not None:
+                        st.info("🚨 **Fuel + GPS**: Theft detection, location validation, MPG fraud, pattern analysis")
+                    else:
+                        st.info("⛽ **Fuel Only**: Enhanced theft detection, pattern analysis, volume anomalies")
             
             # Run audit button
             if st.button("🚀 Run Fleet Audit", type="primary", use_container_width=True):
@@ -549,26 +483,18 @@ def main():
                         # Use the auditor we already initialized above
                         # (it already has the data loaded and overlap analysis done)
                         
-                        # Run comprehensive audit with all detection methods
+                        # Run comprehensive audit with all available detection methods automatically
+                        has_fuel = st.session_state.fuel_data is not None
+                        has_gps = st.session_state.gps_data is not None
+                        
                         audit_results = auditor.run_full_audit(
-                            enable_fuel_only_analysis=enable_fuel_analysis,
-                            enable_enhanced_fuel_detection=enable_enhanced_fuel,
-                            enable_mpg_analysis=enable_mpg_analysis
+                            enable_fuel_only_analysis=has_fuel and not has_gps,  # Pattern analysis when fuel-only
+                            enable_enhanced_fuel_detection=has_fuel,  # Always enable enhanced detection with fuel data
+                            enable_mpg_analysis=has_fuel and has_gps  # MPG analysis when both fuel and GPS available
                         )
                         
-                        # Apply AI insights if enabled
-                        if use_ai_insights and 'consolidated_violations' in audit_results:
-                            try:
-                                with st.spinner("🧠 Analyzing violations with AI..."):
-                                    ai_insights = AIViolationInsights()
-                                    enhanced_violations = ai_insights.analyze_violations_batch(
-                                        audit_results['consolidated_violations']
-                                    )
-                                    audit_results['consolidated_violations'] = enhanced_violations
-                                    audit_results['ai_summary'] = ai_insights.generate_violation_summary(enhanced_violations)
-                                    st.info("✨ AI insights added to violation analysis")
-                            except Exception as e:
-                                st.warning(f"⚠️ AI insights failed: {e}")
+                        # Skip AI violation insights - keep it lightweight and fast
+                        # AI is only used for CSV parsing, violations are detected by fast logic
                         
                         # Store results in session state
                         st.session_state.audit_results = audit_results

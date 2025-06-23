@@ -14,7 +14,8 @@ class FuelParser:
         """
         try:
             print(f"🤖 Using AI to normalize CSV: {file_path}")
-            normalizer = AICsvNormalizer(api_key=api_key)
+            # Use direct API for simplicity and speed (no backend service)
+            normalizer = AICsvNormalizer(api_key=api_key, use_backend_service=False)
             normalized_df = normalizer.normalize_csv(file_path)
             
             # Validate the result
