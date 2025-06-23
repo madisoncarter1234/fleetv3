@@ -42,6 +42,10 @@ class FuelOnlyAnalyzer:
             
             # Flag purchases during unusual hours
             if hour < 5 or hour > 22:  # 10 PM to 5 AM
+                # Estimate cost (assume 30% of after-hours purchases are personal)
+                gallons = purchase.get('gallons', 0) or 0
+                estimated_loss = gallons * 3.75 * 0.3
+                
                 violations.append({
                     'vehicle_id': purchase['vehicle_id'],
                     'timestamp': timestamp,
@@ -49,12 +53,18 @@ class FuelOnlyAnalyzer:
                     'anomaly_type': 'unusual_hours',
                     'description': f"Fuel purchase at {hour:02d}:{timestamp.minute:02d} - outside normal business hours",
                     'location': purchase['location'],
-                    'gallons': purchase['gallons'],
-                    'severity': 'medium'
+                    'gallons': gallons,
+                    'estimated_loss': estimated_loss,
+                    'severity': 'medium',
+                    'confidence': 0.65
                 })
             
             # Flag weekend purchases for business fleets
             if day_of_week >= 5:  # Saturday or Sunday
+                # Estimate cost (assume 20% of weekend purchases are personal)
+                gallons = purchase.get('gallons', 0) or 0
+                estimated_loss = gallons * 3.75 * 0.2
+                
                 violations.append({
                     'vehicle_id': purchase['vehicle_id'],
                     'timestamp': timestamp,
@@ -62,8 +72,10 @@ class FuelOnlyAnalyzer:
                     'anomaly_type': 'weekend_purchase',
                     'description': f"Fuel purchase on {timestamp.strftime('%A')} - unusual for business fleet",
                     'location': purchase['location'],
-                    'gallons': purchase['gallons'],
-                    'severity': 'low'
+                    'gallons': gallons,
+                    'estimated_loss': estimated_loss,
+                    'severity': 'low',
+                    'confidence': 0.55
                 })
         
         return violations
@@ -93,6 +105,10 @@ class FuelOnlyAnalyzer:
             
             for _, purchase in vehicle_data.iterrows():
                 if pd.notna(purchase['gallons']) and purchase['gallons'] > threshold_high:
+                    # Estimate cost (excess volume over normal pattern)
+                    excess_gallons = purchase['gallons'] - mean_volume
+                    estimated_loss = excess_gallons * 3.75 * 0.6  # 60% of excess is likely fraud
+                    
                     violations.append({
                         'vehicle_id': vehicle_id,
                         'timestamp': purchase['timestamp'],
@@ -101,7 +117,9 @@ class FuelOnlyAnalyzer:
                         'description': f"Unusually large fuel purchase: {purchase['gallons']} gallons (normal: {mean_volume:.1f}±{std_volume:.1f})",
                         'location': purchase['location'],
                         'gallons': purchase['gallons'],
-                        'severity': 'high'
+                        'estimated_loss': estimated_loss,
+                        'severity': 'high',
+                        'confidence': 0.80
                     })
         
         return violations
@@ -137,6 +155,9 @@ class FuelOnlyAnalyzer:
                 day_purchases = vehicle_data[vehicle_data['timestamp'].dt.date == date]
                 total_gallons = day_purchases['gallons'].sum()
                 
+                # Estimate cost (assume multiple purchases suggest 40% is personal use)
+                estimated_loss = total_gallons * 3.75 * 0.4
+                
                 violations.append({
                     'vehicle_id': vehicle_id,
                     'timestamp': datetime.combine(date, datetime.min.time()),
@@ -145,7 +166,9 @@ class FuelOnlyAnalyzer:
                     'description': f"{count} fuel purchases in one day totaling {total_gallons:.1f} gallons - suspicious frequency",
                     'location': 'Multiple locations',
                     'gallons': total_gallons,
-                    'severity': 'high'
+                    'estimated_loss': estimated_loss,
+                    'severity': 'high',
+                    'confidence': 0.75
                 })
         
         return violations
@@ -171,6 +194,10 @@ class FuelOnlyAnalyzer:
                 
                 # Only flag if vehicle has established pattern at other locations
                 if len(location_counts) > 3:  # Has used multiple locations
+                    # Estimate cost (assume 25% of unusual location purchases are personal)
+                    gallons = purchase.get('gallons', 0) or 0
+                    estimated_loss = gallons * 3.75 * 0.25
+                    
                     violations.append({
                         'vehicle_id': vehicle_id,
                         'timestamp': purchase['timestamp'],
@@ -178,8 +205,10 @@ class FuelOnlyAnalyzer:
                         'anomaly_type': 'unusual_location',
                         'description': f"One-time fuel purchase at unfamiliar location: {location}",
                         'location': purchase['location'],
-                        'gallons': purchase['gallons'],
-                        'severity': 'medium'
+                        'gallons': gallons,
+                        'estimated_loss': estimated_loss,
+                        'severity': 'medium',
+                        'confidence': 0.60
                     })
         
         return violations
@@ -205,6 +234,9 @@ class FuelOnlyAnalyzer:
                 if time_diff < 2:  # Less than 2 hours apart
                     total_gallons = current['gallons'] + next_purchase['gallons']
                     
+                    # Estimate cost (assume 50% of rapid succession purchases are fraudulent)
+                    estimated_loss = total_gallons * 3.75 * 0.5
+                    
                     violations.append({
                         'vehicle_id': vehicle_id,
                         'timestamp': next_purchase['timestamp'],
@@ -213,7 +245,9 @@ class FuelOnlyAnalyzer:
                         'description': f"Two fuel purchases {time_diff:.1f} hours apart totaling {total_gallons:.1f} gallons - suspicious timing",
                         'location': f"{current['location']} → {next_purchase['location']}",
                         'gallons': total_gallons,
-                        'severity': 'high'
+                        'estimated_loss': estimated_loss,
+                        'severity': 'high',
+                        'confidence': 0.85
                     })
         
         return violations
