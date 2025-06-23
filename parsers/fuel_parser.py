@@ -51,13 +51,31 @@ class FuelParser:
             print("Detected WEX format with combined date/time column")
             df['timestamp'] = FuelParser._parse_timestamps(df['Transaction Date'])
         
-        # Map WEX column names to normalized format
+        # Map WEX column names to normalized format (swiss army knife - handles all variants)
         column_mapping = {
             'Site Name': 'location',
+            'Merchant Name': 'location',  # ChatGPT WEX format
+            'Station Name': 'location',   # Alternative format
+            'Location': 'location',       # Generic format
+            'Store': 'location',          # Simplified format
             'Gallons': 'gallons',
+            'Fuel Quantity': 'gallons',   # Alternative format
+            'Volume': 'gallons',          # Generic format
+            'Liters': 'gallons',          # Metric format (will need conversion)
             'Vehicle Number': 'vehicle_id',
+            'Vehicle': 'vehicle_id',      # Simplified format
+            'Unit': 'vehicle_id',         # Fleet format
+            'Unit Number': 'vehicle_id',  # Fleet format
+            'Truck': 'vehicle_id',        # Generic format
             'Card Number': 'card_id',
-            'Amount': 'amount'
+            'Card': 'card_id',            # Simplified format
+            'Fleet Card': 'card_id',      # Descriptive format
+            'Amount': 'amount',
+            'Total Cost': 'amount',       # ChatGPT WEX format
+            'Total Amount': 'amount',     # Alternative format
+            'Cost': 'amount',             # Simplified format
+            'Price': 'amount',            # Generic format
+            'Charge': 'amount'            # Payment format
         }
         
         # Rename columns if they exist
@@ -145,10 +163,18 @@ class FuelParser:
         sample_df = pd.read_csv(file_path, nrows=5)
         column_names = [col.lower().strip() for col in sample_df.columns]
         
-        # Enhanced detection patterns
-        wex_indicators = ['transaction date', 'site name', 'vehicle number', 'transaction time']
-        fleetcor_indicators = ['merchant name', 'fuel quantity']
-        fuelman_indicators = ['trans date', 'merchant']
+        # Enhanced detection patterns (swiss army knife - catches everything)
+        wex_indicators = [
+            'transaction date', 'site name', 'vehicle number', 'transaction time',
+            'merchant name',  # ChatGPT WEX format
+            'total cost',     # ChatGPT WEX format
+            'driver name',    # ChatGPT WEX format
+            'fuel type',      # ChatGPT WEX format
+            'odometer reading', # ChatGPT WEX format
+            'payment method'  # ChatGPT WEX format
+        ]
+        fleetcor_indicators = ['merchant name', 'fuel quantity', 'fleet card']
+        fuelman_indicators = ['trans date', 'merchant', 'unit number']
         
         # Check for WEX format (including ChatGPT separated date/time format)
         if (provider == 'wex' or 
