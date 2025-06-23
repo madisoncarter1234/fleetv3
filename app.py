@@ -350,6 +350,28 @@ def main():
             
             st.success(f"✅ Data loaded: {', '.join(uploaded_data)}")
             
+            # Initialize auditor to check for date overlap issues
+            auditor = FleetAuditor()
+            auditor.load_data(
+                gps_df=st.session_state.gps_data,
+                fuel_df=st.session_state.fuel_data,
+                job_df=st.session_state.job_data
+            )
+            
+            # Check for overlap warnings
+            overlap_warnings = auditor.get_overlap_warnings()
+            if overlap_warnings:
+                st.warning("⚠️ **Data Time Period Issues Detected:**")
+                for warning in overlap_warnings:
+                    if warning['type'] == 'no_overlap':
+                        st.error(f"❌ {warning['message']} - Cross-referencing these data sources will not work")
+                    elif warning['type'] == 'limited_overlap':
+                        st.warning(f"⚠️ {warning['message']} - Detection may be limited")
+                
+                with st.expander("📅 View Data Date Ranges"):
+                    for source, date_info in auditor.date_ranges.items():
+                        st.write(f"**{source.upper()}:** {date_info['start'].strftime('%Y-%m-%d')} to {date_info['end'].strftime('%Y-%m-%d')} ({date_info['count']} records)")
+            
             # Show which violation types can be detected
             available_violations = []
             
@@ -475,13 +497,8 @@ def main():
             if st.button("🚀 Run Fleet Audit", type="primary", use_container_width=True):
                 with st.spinner("Running fleet audit... This may take a few moments."):
                     try:
-                        # Initialize auditor
-                        auditor = FleetAuditor()
-                        auditor.load_data(
-                            st.session_state.gps_data,
-                            st.session_state.fuel_data,
-                            st.session_state.job_data
-                        )
+                        # Use the auditor we already initialized above
+                        # (it already has the data loaded and overlap analysis done)
                         
                         # Run audit with custom parameters
                         audit_results = auditor.run_full_audit(

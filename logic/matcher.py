@@ -17,6 +17,8 @@ class FleetAuditor:
         self.gps_data = None
         self.fuel_data = None
         self.job_data = None
+        self.date_ranges = {}
+        self.overlap_analysis = {}
     
     def load_data(self, gps_df: pd.DataFrame = None, fuel_df: pd.DataFrame = None, job_df: pd.DataFrame = None):
         """Load normalized data from parsers"""
@@ -24,6 +26,10 @@ class FleetAuditor:
         self.fuel_data = fuel_df.copy() if fuel_df is not None else None
         self.job_data = job_df.copy() if job_df is not None else None
         self.violations = []
+        
+        # Analyze date ranges and overlaps
+        self._analyze_date_ranges()
+        self._analyze_overlaps()
     
     def detect_fuel_theft(self, distance_threshold_miles: float = 1.0, 
                          time_threshold_minutes: int = 15) -> List[Dict]:
@@ -33,13 +39,20 @@ class FleetAuditor:
         if self.fuel_data is None or self.gps_data is None:
             return fuel_theft_violations
         
-        for _, fuel_record in self.fuel_data.iterrows():
+        # Get filtered data that only includes overlapping time periods
+        filtered_fuel, filtered_gps = self.get_filtered_data_for_comparison('fuel', 'gps')
+        
+        if filtered_fuel.empty or filtered_gps.empty:
+            # No overlap - add warning but don't flag as theft
+            return fuel_theft_violations
+        
+        for _, fuel_record in filtered_fuel.iterrows():
             if pd.isna(fuel_record['timestamp']) or pd.isna(fuel_record['vehicle_id']):
                 continue
             
             # Get GPS data for this vehicle around the fuel purchase time
-            vehicle_gps = self.gps_data[
-                self.gps_data['vehicle_id'] == fuel_record['vehicle_id']
+            vehicle_gps = filtered_gps[
+                filtered_gps['vehicle_id'] == fuel_record['vehicle_id']
             ]
             
             if vehicle_gps.empty:
@@ -82,7 +95,14 @@ class FleetAuditor:
         if self.job_data is None or self.gps_data is None:
             return ghost_job_violations
         
-        for _, job_record in self.job_data.iterrows():
+        # Get filtered data that only includes overlapping time periods
+        filtered_jobs, filtered_gps = self.get_filtered_data_for_comparison('jobs', 'gps')
+        
+        if filtered_jobs.empty or filtered_gps.empty:
+            # No overlap - can't detect ghost jobs
+            return ghost_job_violations
+        
+        for _, job_record in filtered_jobs.iterrows():
             if pd.isna(job_record['scheduled_time']) or pd.isna(job_record['address']):
                 continue
             
@@ -96,12 +116,12 @@ class FleetAuditor:
             # Get GPS data for the assigned driver/vehicle
             if pd.notna(job_record['driver_id']):
                 # Filter by driver if available (assuming driver_id maps to vehicle_id)
-                relevant_gps = self.gps_data[
-                    self.gps_data['vehicle_id'] == job_record['driver_id']
+                relevant_gps = filtered_gps[
+                    filtered_gps['vehicle_id'] == job_record['driver_id']
                 ]
             else:
                 # If no specific driver, check all vehicles
-                relevant_gps = self.gps_data
+                relevant_gps = filtered_gps
             
             if relevant_gps.empty:
                 continue
@@ -215,3 +235,140 @@ class FleetAuditor:
         }
         
         return summary
+    
+    def _analyze_date_ranges(self):
+        """Analyze the date ranges of each data source"""
+        self.date_ranges = {}
+        
+        if self.gps_data is not None and not self.gps_data.empty:
+            self.date_ranges['gps'] = {
+                'start': self.gps_data['timestamp'].min(),
+                'end': self.gps_data['timestamp'].max(),
+                'count': len(self.gps_data)
+            }
+        
+        if self.fuel_data is not None and not self.fuel_data.empty:
+            self.date_ranges['fuel'] = {
+                'start': self.fuel_data['timestamp'].min(),
+                'end': self.fuel_data['timestamp'].max(),
+                'count': len(self.fuel_data)
+            }
+        
+        if self.job_data is not None and not self.job_data.empty:
+            self.date_ranges['jobs'] = {
+                'start': self.job_data['scheduled_time'].min(),
+                'end': self.job_data['scheduled_time'].max(),
+                'count': len(self.job_data)
+            }
+    
+    def _analyze_overlaps(self):
+        """Analyze overlap between data sources and flag mismatches"""
+        self.overlap_analysis = {
+            'has_overlaps': {},
+            'overlap_periods': {},
+            'warnings': []
+        }
+        
+        data_sources = [(k, v) for k, v in self.date_ranges.items()]
+        
+        # Check pairwise overlaps
+        for i, (source1, range1) in enumerate(data_sources):
+            for source2, range2 in data_sources[i+1:]:
+                overlap_key = f"{source1}_{source2}"
+                
+                # Calculate overlap
+                overlap_start = max(range1['start'], range2['start'])
+                overlap_end = min(range1['end'], range2['end'])
+                
+                if overlap_start <= overlap_end:
+                    # There is overlap
+                    overlap_days = (overlap_end - overlap_start).days + 1
+                    self.overlap_analysis['has_overlaps'][overlap_key] = True
+                    self.overlap_analysis['overlap_periods'][overlap_key] = {
+                        'start': overlap_start,
+                        'end': overlap_end,
+                        'days': overlap_days
+                    }
+                    
+                    # Warn if overlap is very small
+                    total_days_source1 = (range1['end'] - range1['start']).days + 1
+                    total_days_source2 = (range2['end'] - range2['start']).days + 1
+                    min_total_days = min(total_days_source1, total_days_source2)
+                    
+                    if overlap_days < min_total_days * 0.3:  # Less than 30% overlap
+                        self.overlap_analysis['warnings'].append({
+                            'type': 'limited_overlap',
+                            'sources': [source1, source2],
+                            'message': f"Limited overlap between {source1} and {source2} data ({overlap_days} days of {min_total_days} days)"
+                        })
+                else:
+                    # No overlap
+                    self.overlap_analysis['has_overlaps'][overlap_key] = False
+                    gap_days = (overlap_start - overlap_end).days
+                    
+                    self.overlap_analysis['warnings'].append({
+                        'type': 'no_overlap',
+                        'sources': [source1, source2],
+                        'message': f"No temporal overlap between {source1} and {source2} data (gap of {gap_days} days)"
+                    })
+    
+    def get_overlap_warnings(self) -> List[Dict]:
+        """Get warnings about data overlap issues"""
+        return self.overlap_analysis.get('warnings', [])
+    
+    def get_filtered_data_for_comparison(self, source1: str, source2: str) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """Get filtered data for two sources that only includes overlapping time periods"""
+        overlap_key = f"{source1}_{source2}"
+        alt_overlap_key = f"{source2}_{source1}"
+        
+        # Find the overlap period
+        overlap_period = None
+        if overlap_key in self.overlap_analysis.get('overlap_periods', {}):
+            overlap_period = self.overlap_analysis['overlap_periods'][overlap_key]
+        elif alt_overlap_key in self.overlap_analysis.get('overlap_periods', {}):
+            overlap_period = self.overlap_analysis['overlap_periods'][alt_overlap_key]
+        
+        if overlap_period is None:
+            # No overlap, return empty DataFrames
+            return pd.DataFrame(), pd.DataFrame()
+        
+        # Filter data to overlap period
+        start_date = overlap_period['start']
+        end_date = overlap_period['end']
+        
+        data1 = None
+        data2 = None
+        
+        if source1 == 'gps' and self.gps_data is not None:
+            data1 = self.gps_data[
+                (self.gps_data['timestamp'] >= start_date) & 
+                (self.gps_data['timestamp'] <= end_date)
+            ].copy()
+        elif source1 == 'fuel' and self.fuel_data is not None:
+            data1 = self.fuel_data[
+                (self.fuel_data['timestamp'] >= start_date) & 
+                (self.fuel_data['timestamp'] <= end_date)
+            ].copy()
+        elif source1 == 'jobs' and self.job_data is not None:
+            data1 = self.job_data[
+                (self.job_data['scheduled_time'] >= start_date) & 
+                (self.job_data['scheduled_time'] <= end_date)
+            ].copy()
+        
+        if source2 == 'gps' and self.gps_data is not None:
+            data2 = self.gps_data[
+                (self.gps_data['timestamp'] >= start_date) & 
+                (self.gps_data['timestamp'] <= end_date)
+            ].copy()
+        elif source2 == 'fuel' and self.fuel_data is not None:
+            data2 = self.fuel_data[
+                (self.fuel_data['timestamp'] >= start_date) & 
+                (self.fuel_data['timestamp'] <= end_date)
+            ].copy()
+        elif source2 == 'jobs' and self.job_data is not None:
+            data2 = self.job_data[
+                (self.job_data['scheduled_time'] >= start_date) & 
+                (self.job_data['scheduled_time'] <= end_date)
+            ].copy()
+        
+        return data1 if data1 is not None else pd.DataFrame(), data2 if data2 is not None else pd.DataFrame()
