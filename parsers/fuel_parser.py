@@ -229,9 +229,17 @@ class FuelParser:
         try:
             parsed = pd.to_datetime(timestamp_series, infer_datetime_format=True)
             # Check if parsing was successful (not all NaT or midnight)
-            if not parsed.isna().all() and not (parsed.dt.time == pd.Timestamp('00:00:00').time()).all():
+            midnight_count = (parsed.dt.time == pd.Timestamp('00:00:00').time()).sum()
+            total_count = len(parsed.dropna())
+            
+            # If more than 80% are midnight, likely the original data is date-only
+            if not parsed.isna().all() and midnight_count < total_count * 0.8:
+                print(f"Auto-detection successful. Midnight entries: {midnight_count}/{total_count}")
                 return parsed
-        except:
+            elif midnight_count > total_count * 0.8:
+                print(f"Warning: {midnight_count}/{total_count} timestamps defaulted to midnight - likely date-only data")
+        except Exception as e:
+            print(f"Auto-detection failed: {e}")
             pass
         
         # Try each format manually

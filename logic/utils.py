@@ -113,8 +113,17 @@ def filter_business_hours_violations(gps_df: pd.DataFrame,
     """Find GPS activity outside business hours"""
     violations = []
     
-    # Filter for non-business hours activity
-    after_hours = gps_df[~gps_df['timestamp'].apply(
+    # Check if timestamps have time information
+    timestamps_with_time = gps_df['timestamp'].dt.time != pd.Timestamp('00:00:00').time()
+    has_time_data = timestamps_with_time.any()
+    
+    if not has_time_data:
+        print("Warning: GPS timestamps are date-only (all midnight) - skipping after-hours analysis.")
+        return violations
+    
+    # Filter for non-business hours activity (only for timestamps with time data)
+    gps_with_time = gps_df[timestamps_with_time]
+    after_hours = gps_with_time[~gps_with_time['timestamp'].apply(
         lambda t: is_business_hours(t, start_hour, end_hour)
     )]
     

@@ -35,10 +35,22 @@ class FuelOnlyAnalyzer:
         """Detect suspicious timing patterns"""
         violations = []
         
+        # Check if timestamps have time information or are date-only
+        timestamps_with_time = fuel_df['timestamp'].dt.time != pd.Timestamp('00:00:00').time()
+        has_time_data = timestamps_with_time.any()
+        
+        if not has_time_data:
+            print("Warning: All timestamps are midnight (00:00) - likely date-only data. Skipping time-based analysis.")
+            return violations
+        
         for _, purchase in fuel_df.iterrows():
             timestamp = purchase['timestamp']
             hour = timestamp.hour
             day_of_week = timestamp.weekday()  # 0 = Monday, 6 = Sunday
+            
+            # Skip if this specific timestamp has no time data (is midnight)
+            if timestamp.time() == pd.Timestamp('00:00:00').time():
+                continue
             
             # Flag purchases during unusual hours
             if hour < 5 or hour > 22:  # 10 PM to 5 AM
@@ -216,6 +228,14 @@ class FuelOnlyAnalyzer:
     def detect_impossible_scenarios(self, fuel_df: pd.DataFrame) -> List[Dict]:
         """Detect physically impossible scenarios"""
         violations = []
+        
+        # Check if timestamps have time information
+        timestamps_with_time = fuel_df['timestamp'].dt.time != pd.Timestamp('00:00:00').time()
+        has_time_data = timestamps_with_time.any()
+        
+        if not has_time_data:
+            print("Warning: No time data available - skipping rapid succession analysis.")
+            return violations
         
         # Sort by timestamp for sequence analysis
         fuel_df_sorted = fuel_df.sort_values(['vehicle_id', 'timestamp'])
