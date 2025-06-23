@@ -1,0 +1,3 @@
+Transaction Date,Transaction Time,Vehicle Number,Driver Name,Merchant Name,Fuel Type,Gallons,Price Per Gallon,Total Cost,Odometer Reading,Payment Method
+06/14/2024,04:56 AM,TRUCK-003,Mike Allen,Mobil,Unleaded,18.99,3.31,62.86,32630,WEX Fleet Card
+06/16/2024,,TRUCK-003,John Doe,Shell,Diesel,21.5,3.45,74.18,32890,WEX Fleet Card

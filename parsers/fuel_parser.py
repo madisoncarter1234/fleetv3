@@ -1,9 +1,37 @@
 import pandas as pd
 from datetime import datetime
 from typing import Dict, List, Optional
+from .ai_csv_normalizer import AICsvNormalizer
 
 class FuelParser:
     """Parser for fuel card data from various providers"""
+    
+    @staticmethod
+    def parse_with_ai(file_path: str, api_key: Optional[str] = None, fallback: bool = True) -> pd.DataFrame:
+        """
+        AI-first parsing: Use LLM to normalize any CSV to consistent schema
+        Falls back to manual parsing if AI fails
+        """
+        try:
+            print(f"🤖 Using AI to normalize CSV: {file_path}")
+            normalizer = AICsvNormalizer(api_key=api_key)
+            normalized_df = normalizer.normalize_csv(file_path)
+            
+            # Validate the result
+            if len(normalized_df) > 0 and 'timestamp' in normalized_df.columns:
+                print(f"✅ AI normalization successful: {len(normalized_df)} rows")
+                return normalized_df
+            else:
+                raise ValueError("AI normalization returned empty or invalid data")
+                
+        except Exception as e:
+            print(f"❌ AI normalization failed: {e}")
+            
+            if fallback:
+                print("🔄 Falling back to manual parsing...")
+                return FuelParser.auto_parse(file_path)
+            else:
+                raise e
     
     @staticmethod
     def parse_wex(file_path: str) -> pd.DataFrame:
@@ -35,8 +63,8 @@ class FuelParser:
                 )
                 combined_strings[~valid_time_mask] = df.loc[~valid_time_mask, date_col].astype(str)
                 
-                # Parse timestamps
-                df['timestamp'] = FuelParser._parse_timestamps(combined_strings)
+                # Parse timestamps with detailed logging
+                df['timestamp'] = FuelParser._parse_timestamps_with_logging(combined_strings, date_col, time_col)
                 
                 # If parsing failed and resulted in mostly NaT, fall back to date-only for all
                 nat_count = df['timestamp'].isna().sum()
@@ -317,6 +345,75 @@ class FuelParser:
                     break
         
         return date_col, time_col
+    
+    @staticmethod
+    def _parse_timestamps_with_logging(combined_strings: pd.Series, date_col: str, time_col: str) -> pd.Series:
+        """Parse timestamps with detailed logging of failures"""
+        parsed_timestamps = pd.Series(index=combined_strings.index, dtype='datetime64[ns]')
+        midnight_failures = []
+        
+        for idx, combined_str in combined_strings.items():
+            if pd.isna(combined_str) or combined_str == '':
+                parsed_timestamps[idx] = pd.NaT
+                continue
+                
+            # Try parsing the combined string
+            parsed = None
+            try:
+                parsed = pd.to_datetime(combined_str, format='mixed', errors='coerce')
+                if pd.isna(parsed):
+                    # Try manual format attempts
+                    formats = [
+                        '%Y-%m-%d %H:%M:%S',
+                        '%Y-%m-%d %H:%M',
+                        '%m/%d/%Y %H:%M:%S',
+                        '%m/%d/%Y %H:%M',
+                        '%Y-%m-%d %I:%M:%S %p',
+                        '%Y-%m-%d %I:%M %p'
+                    ]
+                    for fmt in formats:
+                        try:
+                            parsed = pd.to_datetime(combined_str, format=fmt)
+                            break
+                        except:
+                            continue
+                            
+                if pd.isna(parsed):
+                    # Fall back to date-only parsing
+                    date_part = combined_str.split(' ')[0] if ' ' in combined_str else combined_str
+                    parsed = pd.to_datetime(date_part, errors='coerce')
+                    
+            except Exception as e:
+                # Fall back to date-only parsing on any error
+                try:
+                    date_part = combined_str.split(' ')[0] if ' ' in combined_str else combined_str
+                    parsed = pd.to_datetime(date_part, errors='coerce')
+                except:
+                    parsed = pd.NaT
+            
+            parsed_timestamps[idx] = parsed
+            
+            # Check if result is exactly midnight (00:00:00) - indicates time parsing failure
+            if not pd.isna(parsed) and parsed.time() == pd.Timestamp('00:00:00').time():
+                time_part = combined_str.split(' ')[1] if ' ' in combined_str and len(combined_str.split(' ')) > 1 else 'N/A'
+                if time_part != '00:00:00' and time_part != 'N/A':  # Only log if time wasn't actually 00:00:00
+                    midnight_failures.append({
+                        'row': idx + 1,  # 1-indexed for user
+                        'original_string': combined_str,
+                        'time_part': time_part,
+                        'parsed_result': parsed
+                    })
+        
+        # Log midnight parsing failures
+        if midnight_failures:
+            print(f"\n⚠️  WARNING: {len(midnight_failures)} timestamps defaulted to midnight due to parsing failures:")
+            for failure in midnight_failures[:10]:  # Show first 10
+                print(f"  Row {failure['row']}: '{failure['original_string']}' (time: '{failure['time_part']}') → {failure['parsed_result']}")
+            if len(midnight_failures) > 10:
+                print(f"  ... and {len(midnight_failures) - 10} more")
+            print(f"  💡 These rows will likely trigger false positives in time-based violation detection\n")
+        
+        return parsed_timestamps
     
     @staticmethod
     def _parse_timestamps(timestamp_series: pd.Series) -> pd.Series:

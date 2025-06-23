@@ -12,6 +12,7 @@ from parsers.job_parser import JobParser
 from logic.matcher import FleetAuditor
 from logic.report_generator import ReportGenerator
 from email_service.send_email import EmailSender
+from logic.ai_violation_insights import AIViolationInsights
 
 # Page configuration
 st.set_page_config(
@@ -232,10 +233,26 @@ def main():
                 **💡 Most fleet fuel card systems export gallons data** - check your online portal for "transaction export" or "detailed reports"
                 """)
             
-            fuel_provider = st.selectbox(
-                "Fuel Card Provider",
-                ["auto-detect", "wex", "fleetcor", "fuelman", "generic"],
-                key="fuel_provider"
+            # AI parsing option (universal)
+            use_ai_parsing = st.checkbox(
+                "🤖 Enable AI-Smart CSV Parsing",
+                value=True,
+                help="Let AI automatically understand any CSV format (requires ANTHROPIC_API_KEY)"
+            )
+            
+            if not use_ai_parsing:
+                fuel_provider = st.selectbox(
+                    "Fuel Card Provider (Manual)",
+                    ["auto-detect", "wex", "fleetcor", "fuelman", "generic"],
+                    key="fuel_provider",
+                    help="Manual parsing - only use if AI parsing fails"
+                )
+            
+            # AI insights option
+            use_ai_insights = st.checkbox(
+                "🧠 Enable AI Violation Insights",
+                value=False,
+                help="Add detailed AI analysis explaining why violations look suspicious (requires ANTHROPIC_API_KEY)"
             )
             
             fuel_file = st.file_uploader(
@@ -253,7 +270,9 @@ def main():
                         tmp_path = tmp_file.name
                     
                     # Parse fuel data
-                    if fuel_provider == "auto-detect":
+                    if use_ai_parsing:
+                        fuel_data = FuelParser.parse_with_ai(tmp_path)
+                    elif fuel_provider == "auto-detect":
                         fuel_data = FuelParser.auto_parse(tmp_path)
                     else:
                         fuel_data = getattr(FuelParser, f'parse_{fuel_provider}')(tmp_path)
@@ -536,6 +555,20 @@ def main():
                             enable_enhanced_fuel_detection=enable_enhanced_fuel,
                             enable_mpg_analysis=enable_mpg_analysis
                         )
+                        
+                        # Apply AI insights if enabled
+                        if use_ai_insights and 'consolidated_violations' in audit_results:
+                            try:
+                                with st.spinner("🧠 Analyzing violations with AI..."):
+                                    ai_insights = AIViolationInsights()
+                                    enhanced_violations = ai_insights.analyze_violations_batch(
+                                        audit_results['consolidated_violations']
+                                    )
+                                    audit_results['consolidated_violations'] = enhanced_violations
+                                    audit_results['ai_summary'] = ai_insights.generate_violation_summary(enhanced_violations)
+                                    st.info("✨ AI insights added to violation analysis")
+                            except Exception as e:
+                                st.warning(f"⚠️ AI insights failed: {e}")
                         
                         # Store results in session state
                         st.session_state.audit_results = audit_results
