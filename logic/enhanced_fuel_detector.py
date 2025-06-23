@@ -10,11 +10,11 @@ class EnhancedFuelDetector:
     def __init__(self):
         self.violations = []
         # Average fuel prices (could be made dynamic with API)
-        self.avg_fuel_price = 3.50  # dollars per gallon
-        self.price_tolerance = 0.25  # +/- 25 cents per gallon tolerance
+        self.avg_fuel_price = 3.75  # dollars per gallon (updated 2024)
+        self.price_tolerance = 0.40  # +/- 40 cents per gallon tolerance (regional variation)
         
-        # Common vehicle tank capacities (could be vehicle-specific)
-        self.default_tank_capacity = 25.0  # gallons
+        # More realistic commercial vehicle tank capacities
+        self.default_tank_capacity = 40.0  # gallons (commercial vehicle average)
         self.vehicle_capacities = {
             # Could be loaded from vehicle database
             # 'TRUCK-001': 30.0,
@@ -188,19 +188,34 @@ class EnhancedFuelDetector:
                     
                     if any(suspicious_conditions):
                         total_gallons = last_purchase['gallons'] + gallons
+                        
+                        # Check for potential emergency scenarios (reduce confidence)
+                        confidence = 0.95
+                        note = ""
+                        
+                        # Emergency indicators: very small previous purchase (ran out of gas)
+                        if last_purchase['gallons'] < 5 and hours_since_last < 2:
+                            confidence = 0.60
+                            note = " - May be emergency refueling after running out of gas"
+                        
+                        # Different locations suggest legitimate travel
+                        elif purchase['location'] != last_purchase['location']:
+                            confidence = 0.80
+                            note = " - Different locations may indicate legitimate travel"
+                        
                         violations.append({
                             'vehicle_id': vehicle_id,
                             'timestamp': purchase['timestamp'],
                             'violation_type': 'fuel_theft',
                             'detection_method': 'obvious_rapid_refill',
-                            'description': f"Extremely suspicious: {gallons:.1f} gallons purchased only {hours_since_last:.1f} hours after {last_purchase['gallons']:.1f} gallon purchase. Total: {total_gallons:.1f} gallons in {hours_since_last:.1f} hours - far exceeds normal vehicle consumption",
+                            'description': f"Extremely suspicious: {gallons:.1f} gallons purchased only {hours_since_last:.1f} hours after {last_purchase['gallons']:.1f} gallon purchase. Total: {total_gallons:.1f} gallons in {hours_since_last:.1f} hours - far exceeds normal vehicle consumption{note}",
                             'location': purchase['location'],
                             'gallons': gallons,
                             'previous_gallons': last_purchase['gallons'],
                             'hours_between': hours_since_last,
                             'total_gallons': total_gallons,
-                            'severity': 'high',
-                            'confidence': 0.95
+                            'severity': 'high' if confidence > 0.8 else 'medium',
+                            'confidence': confidence
                         })
         
         return violations
@@ -227,37 +242,46 @@ class EnhancedFuelDetector:
             max_expected = gallons * (self.avg_fuel_price + self.price_tolerance)
             
             # Check for excessive cost (indicates non-fuel purchases)
-            if amount > max_expected * 1.3:  # 30% over expected range
+            if amount > max_expected * 1.5:  # 50% over expected range (was 30% - too sensitive)
                 excess_amount = amount - max_expected
+                
+                # Reduce confidence for potential DEF fluid or equipment purchases
+                confidence = 0.75
+                note = ""
+                
+                # DEF fluid detection (smaller amounts, specific price ranges)
+                if 15 <= amount <= 60 and gallons < 15:
+                    confidence = 0.45
+                    note = " - May be DEF fluid or equipment fuel"
                 
                 violations.append({
                     'vehicle_id': purchase['vehicle_id'],
                     'timestamp': purchase['timestamp'],
                     'violation_type': 'fuel_theft',
                     'detection_method': 'price_excess',
-                    'description': f"Transaction cost ${amount:.2f} is ${excess_amount:.2f} more than expected for {gallons:.1f} gallons (${price_per_gallon:.2f}/gal vs expected ~${self.avg_fuel_price:.2f}/gal) - likely includes non-fuel purchases",
+                    'description': f"Transaction cost ${amount:.2f} is ${excess_amount:.2f} more than expected for {gallons:.1f} gallons (${price_per_gallon:.2f}/gal vs expected ~${self.avg_fuel_price:.2f}/gal) - likely includes non-fuel purchases{note}",
                     'location': purchase['location'],
                     'gallons': gallons,
                     'amount': amount,
                     'excess_cost': excess_amount,
-                    'severity': 'medium',
-                    'confidence': 0.75
+                    'severity': 'medium' if confidence > 0.6 else 'low',
+                    'confidence': confidence
                 })
             
             # Check for extremely high price per gallon (premium fuel + extras)
-            elif price_per_gallon > (self.avg_fuel_price + 1.50):  # $1.50 over average
+            elif price_per_gallon > (self.avg_fuel_price + 2.00):  # $2.00 over average (was $1.50 - account for premium diesel)
                 violations.append({
                     'vehicle_id': purchase['vehicle_id'],
                     'timestamp': purchase['timestamp'],
                     'violation_type': 'fuel_theft',
                     'detection_method': 'price_premium',
-                    'description': f"Extremely high price per gallon: ${price_per_gallon:.2f} vs expected ~${self.avg_fuel_price:.2f} - may include premium services or non-fuel items",
+                    'description': f"Very high price per gallon: ${price_per_gallon:.2f} vs expected ~${self.avg_fuel_price:.2f} - may include premium fuel, services, or non-fuel items",
                     'location': purchase['location'],
                     'gallons': gallons,
                     'amount': amount,
                     'price_per_gallon': price_per_gallon,
                     'severity': 'low',
-                    'confidence': 0.60
+                    'confidence': 0.50  # Lower confidence for price-only anomalies
                 })
         
         return violations
@@ -331,19 +355,35 @@ class EnhancedFuelDetector:
                     tank_capacity = self.vehicle_capacities.get(vehicle_id, self.default_tank_capacity)
                     
                     # Flag if total daily purchases exceed reasonable amount
-                    if total_gallons > tank_capacity * 1.5:
+                    if total_gallons > tank_capacity * 2.0:  # Increased from 1.5x to 2.0x (more conservative)
+                        
+                        # Check for legitimate multi-purchase scenarios
+                        confidence = 0.85
+                        note = ""
+                        
+                        # Small individual purchases suggest equipment/multiple vehicles
+                        avg_purchase = total_gallons / len(day_purchases)
+                        if avg_purchase < tank_capacity * 0.3:  # Small individual purchases
+                            confidence = 0.60
+                            note = " - Small purchases may indicate equipment refueling or multiple vehicles"
+                        
+                        # Many small purchases in one day
+                        elif len(day_purchases) >= 4 and avg_purchase < tank_capacity * 0.5:
+                            confidence = 0.55
+                            note = " - Multiple small purchases may be legitimate equipment/fleet operations"
+                        
                         violations.append({
                             'vehicle_id': vehicle_id,
                             'timestamp': day_purchases['timestamp'].min(),
                             'violation_type': 'fuel_theft',
                             'detection_method': 'daily_excess',
-                            'description': f"{len(day_purchases)} purchases on {date} totaling {total_gallons:.1f} gallons - exceeds vehicle capacity ({tank_capacity} gal) suggesting personal use",
+                            'description': f"{len(day_purchases)} purchases on {date} totaling {total_gallons:.1f} gallons - significantly exceeds vehicle capacity ({tank_capacity} gal) suggesting personal use{note}",
                             'location': 'Multiple locations',
                             'gallons': total_gallons,
                             'amount': total_amount,
                             'purchase_count': len(day_purchases),
-                            'severity': 'high',
-                            'confidence': 0.85
+                            'severity': 'high' if confidence > 0.7 else 'medium',
+                            'confidence': confidence
                         })
         
         return violations

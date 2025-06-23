@@ -217,6 +217,21 @@ def main():
             st.subheader("⛽ Fuel Card Data")
             st.write("Upload fuel purchase records (CSV)")
             
+            with st.expander("ℹ️ What fuel card data works best?"):
+                st.write("""
+                **✅ Fleet fuel cards** (WEX, FleetCor, Fuelman):
+                • Include gallons + dollar amounts
+                • Best detection (95% confidence)
+                • Track fuel consumption automatically
+                
+                **⚠️ Regular credit cards:**
+                • Only dollar amounts (no gallons)
+                • Limited detection (estimated volumes)
+                • May miss some theft patterns
+                
+                **💡 Most fleet fuel card systems export gallons data** - check your online portal for "transaction export" or "detailed reports"
+                """)
+            
             fuel_provider = st.selectbox(
                 "Fuel Card Provider",
                 ["auto-detect", "wex", "fleetcor", "fuelman", "generic"],
@@ -364,9 +379,11 @@ def main():
                 st.warning("⚠️ **Data Time Period Issues Detected:**")
                 for warning in overlap_warnings:
                     if warning['type'] == 'no_overlap':
-                        st.error(f"❌ {warning['message']} - Cross-referencing these data sources will not work")
+                        sources = ' and '.join([s.upper() for s in warning['sources']])
+                        st.error(f"❌ **{sources} data are from different time periods** - Upload matching dates to cross-check for violations")
                     elif warning['type'] == 'limited_overlap':
-                        st.warning(f"⚠️ {warning['message']} - Detection may be limited")
+                        sources = ' and '.join([s.upper() for s in warning['sources']])
+                        st.warning(f"⚠️ **{sources} data barely overlap** - Detection will be limited to common time period")
                 
                 with st.expander("📅 View Data Date Ranges"):
                     for source, date_info in auditor.date_ranges.items():
