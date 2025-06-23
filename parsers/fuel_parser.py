@@ -10,9 +10,49 @@ class FuelParser:
         """Parse WEX fuel card export CSV"""
         df = pd.read_csv(file_path)
         
+        # Handle separate date and time columns (ChatGPT format)
+        if 'Transaction Date' in df.columns and 'Transaction Time' in df.columns:
+            print("Detected WEX format with separate date/time columns")
+            
+            # Clean and validate time data first
+            df['Transaction Time'] = df['Transaction Time'].fillna('')
+            df['Transaction Date'] = df['Transaction Date'].fillna('')
+            
+            # Check if we actually have valid time data
+            has_valid_time = df['Transaction Time'].str.strip().str.len() > 0
+            
+            if has_valid_time.any():
+                # For mixed data, handle valid and invalid time entries separately
+                valid_time_mask = has_valid_time
+                
+                # Create combined strings only for valid time entries
+                combined_strings = pd.Series(index=df.index, dtype='object')
+                combined_strings[valid_time_mask] = (
+                    df.loc[valid_time_mask, 'Transaction Date'].astype(str) + ' ' + 
+                    df.loc[valid_time_mask, 'Transaction Time'].astype(str)
+                )
+                combined_strings[~valid_time_mask] = df.loc[~valid_time_mask, 'Transaction Date'].astype(str)
+                
+                # Parse timestamps
+                df['timestamp'] = FuelParser._parse_timestamps(combined_strings)
+                
+                # If parsing failed and resulted in mostly NaT, fall back to date-only for all
+                nat_count = df['timestamp'].isna().sum()
+                total_count = len(df['timestamp'])
+                
+                if nat_count > total_count * 0.5:  # More than 50% failed
+                    print("Warning: Time parsing mostly failed, falling back to date-only parsing for all records")
+                    df['timestamp'] = FuelParser._parse_timestamps(df['Transaction Date'])
+            else:
+                print("Warning: No valid time data found, using date-only parsing")
+                df['timestamp'] = FuelParser._parse_timestamps(df['Transaction Date'])
+                
+        elif 'Transaction Date' in df.columns:
+            print("Detected WEX format with combined date/time column")
+            df['timestamp'] = FuelParser._parse_timestamps(df['Transaction Date'])
+        
         # Map WEX column names to normalized format
         column_mapping = {
-            'Transaction Date': 'timestamp',
             'Site Name': 'location',
             'Gallons': 'gallons',
             'Vehicle Number': 'vehicle_id',
@@ -24,10 +64,6 @@ class FuelParser:
         for old_col, new_col in column_mapping.items():
             if old_col in df.columns:
                 df = df.rename(columns={old_col: new_col})
-        
-        # Convert timestamp to datetime with multiple format attempts
-        if 'timestamp' in df.columns:
-            df['timestamp'] = FuelParser._parse_timestamps(df['timestamp'])
         
         # Ensure required columns exist
         required_cols = ['timestamp', 'location', 'gallons', 'vehicle_id']
@@ -110,14 +146,15 @@ class FuelParser:
         column_names = [col.lower().strip() for col in sample_df.columns]
         
         # Enhanced detection patterns
-        wex_indicators = ['transaction date', 'site name', 'vehicle number']
+        wex_indicators = ['transaction date', 'site name', 'vehicle number', 'transaction time']
         fleetcor_indicators = ['merchant name', 'fuel quantity']
         fuelman_indicators = ['trans date', 'merchant']
         
-        # Check for WEX format
+        # Check for WEX format (including ChatGPT separated date/time format)
         if (provider == 'wex' or 
             any(indicator in column_names for indicator in wex_indicators) or
-            'transaction date' in column_names):
+            'transaction date' in column_names or
+            ('transaction date' in column_names and 'transaction time' in column_names)):
             print(f"Detected WEX format based on columns: {sample_df.columns.tolist()}")
             return FuelParser.parse_wex(file_path)
         
@@ -214,6 +251,11 @@ class FuelParser:
             '%Y-%m-%d %H:%M',         # 2024-06-15 14:30
             '%m/%d/%Y %H:%M',         # 06/15/2024 14:30
             '%d/%m/%Y %H:%M',         # 15/06/2024 14:30
+            '%m/%d/%Y %I:%M %p',      # 06/15/2024 04:56 AM (12-hour with AM/PM)
+            '%d/%m/%Y %I:%M %p',      # 15/06/2024 04:56 AM
+            '%Y-%m-%d %I:%M %p',      # 2024-06-15 04:56 AM
+            '%m-%d-%Y %I:%M %p',      # 06-15-2024 04:56 AM
+            '%d-%m-%Y %I:%M %p',      # 15-06-2024 04:56 AM
             '%Y-%m-%d',               # 2024-06-15 (date only)
             '%m/%d/%Y',               # 06/15/2024 (date only)
             '%d/%m/%Y',               # 15/06/2024 (date only)
@@ -225,7 +267,29 @@ class FuelParser:
             '%d-%m-%Y',               # 15-06-2024 (date only)
         ]
         
-        # Try pandas auto-detection first
+        # Try pandas auto-detection first with mixed format support
+        try:
+            # Use mixed format to handle inconsistent timestamp formats
+            parsed = pd.to_datetime(timestamp_series, format='mixed', errors='coerce')
+            
+            # Check if parsing was successful (not all NaT or midnight)
+            valid_parsed = parsed.dropna()
+            if len(valid_parsed) > 0:
+                midnight_count = (valid_parsed.dt.time == pd.Timestamp('00:00:00').time()).sum()
+                total_count = len(valid_parsed)
+                
+                # If more than 80% are midnight, likely the original data is date-only
+                if midnight_count < total_count * 0.8:
+                    print(f"Mixed format parsing successful. Midnight entries: {midnight_count}/{total_count}")
+                    return parsed
+                elif midnight_count > total_count * 0.8:
+                    print(f"Warning: {midnight_count}/{total_count} timestamps defaulted to midnight - likely date-only data")
+                    return parsed
+        except Exception as e:
+            print(f"Mixed format parsing failed: {e}")
+            pass
+        
+        # Fallback to traditional auto-detection
         try:
             parsed = pd.to_datetime(timestamp_series, infer_datetime_format=True)
             # Check if parsing was successful (not all NaT or midnight)
