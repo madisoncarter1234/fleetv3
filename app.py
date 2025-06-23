@@ -241,8 +241,21 @@ def main():
                         tmp_file.write(fuel_file.getvalue())
                         tmp_path = tmp_file.name
                     
-                    # Always use AI parsing - handles any CSV format automatically
-                    fuel_data = FuelParser.parse_with_ai(tmp_path)
+                    # FUCK THE MANUAL LOGIC - 100% AI EVERYTHING
+                    from parsers.ai_only_parser import AIOnlyParser
+                    ai_parser = AIOnlyParser()
+                    ai_result = ai_parser.parse_and_detect_violations(tmp_path)
+                    
+                    if 'dataframe' in ai_result and len(ai_result['dataframe']) > 0:
+                        fuel_data = ai_result['dataframe']
+                        # Store AI violations for display
+                        st.session_state.ai_violations = ai_result.get('violations', [])
+                        st.session_state.ai_summary = ai_result.get('summary', {})
+                    else:
+                        # Fallback to old method only if AI completely fails
+                        fuel_data = FuelParser.parse_with_ai(tmp_path)
+                        st.session_state.ai_violations = []
+                        st.session_state.ai_summary = {}
                     
                     st.session_state.fuel_data = fuel_data
                     st.success(f"✅ Fuel data loaded: {len(fuel_data)} records")
@@ -483,15 +496,28 @@ def main():
                         # Use the auditor we already initialized above
                         # (it already has the data loaded and overlap analysis done)
                         
-                        # Run comprehensive audit with all available detection methods automatically
-                        has_fuel = st.session_state.fuel_data is not None
-                        has_gps = st.session_state.gps_data is not None
-                        
-                        audit_results = auditor.run_full_audit(
-                            enable_fuel_only_analysis=has_fuel and not has_gps,  # Pattern analysis when fuel-only
-                            enable_enhanced_fuel_detection=has_fuel,  # Always enable enhanced detection with fuel data
-                            enable_mpg_analysis=has_fuel and has_gps  # MPG analysis when both fuel and GPS available
-                        )
+                        # Use AI violations if available, otherwise run manual audit
+                        if hasattr(st.session_state, 'ai_violations') and st.session_state.ai_violations:
+                            # Use pure AI results
+                            audit_results = {
+                                'consolidated_violations': st.session_state.ai_violations,
+                                'financial_summary': {
+                                    'total_fleet_loss': len(st.session_state.ai_violations) * 50,  # Estimate $50 per violation
+                                    'vehicles_flagged': len(set(v.get('vehicle_id') for v in st.session_state.ai_violations)),
+                                    'weekly_fleet_estimate': len(st.session_state.ai_violations) * 50 * 52 / 12  # Rough weekly estimate
+                                },
+                                'ai_summary': st.session_state.ai_summary
+                            }
+                        else:
+                            # Fallback to manual audit logic
+                            has_fuel = st.session_state.fuel_data is not None
+                            has_gps = st.session_state.gps_data is not None
+                            
+                            audit_results = auditor.run_full_audit(
+                                enable_fuel_only_analysis=has_fuel and not has_gps,
+                                enable_enhanced_fuel_detection=has_fuel,
+                                enable_mpg_analysis=has_fuel and has_gps
+                            )
                         
                         # Skip AI violation insights - keep it lightweight and fast
                         # AI is only used for CSV parsing, violations are detected by fast logic
