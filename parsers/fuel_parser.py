@@ -10,16 +10,18 @@ class FuelParser:
         """Parse WEX fuel card export CSV"""
         df = pd.read_csv(file_path)
         
-        # Handle separate date and time columns (ChatGPT format)
-        if 'Transaction Date' in df.columns and 'Transaction Time' in df.columns:
-            print("Detected WEX format with separate date/time columns")
+        # Handle separate date and time columns (UNIVERSAL - all formats)
+        date_col, time_col = FuelParser._find_date_time_columns(df.columns)
+        
+        if date_col and time_col:
+            print(f"Detected separate date/time columns: '{date_col}' + '{time_col}'")
             
             # Clean and validate time data first
-            df['Transaction Time'] = df['Transaction Time'].fillna('')
-            df['Transaction Date'] = df['Transaction Date'].fillna('')
+            df[time_col] = df[time_col].fillna('')
+            df[date_col] = df[date_col].fillna('')
             
             # Check if we actually have valid time data
-            has_valid_time = df['Transaction Time'].str.strip().str.len() > 0
+            has_valid_time = df[time_col].astype(str).str.strip().str.len() > 0
             
             if has_valid_time.any():
                 # For mixed data, handle valid and invalid time entries separately
@@ -28,10 +30,10 @@ class FuelParser:
                 # Create combined strings only for valid time entries
                 combined_strings = pd.Series(index=df.index, dtype='object')
                 combined_strings[valid_time_mask] = (
-                    df.loc[valid_time_mask, 'Transaction Date'].astype(str) + ' ' + 
-                    df.loc[valid_time_mask, 'Transaction Time'].astype(str)
+                    df.loc[valid_time_mask, date_col].astype(str) + ' ' + 
+                    df.loc[valid_time_mask, time_col].astype(str)
                 )
-                combined_strings[~valid_time_mask] = df.loc[~valid_time_mask, 'Transaction Date'].astype(str)
+                combined_strings[~valid_time_mask] = df.loc[~valid_time_mask, date_col].astype(str)
                 
                 # Parse timestamps
                 df['timestamp'] = FuelParser._parse_timestamps(combined_strings)
@@ -42,14 +44,14 @@ class FuelParser:
                 
                 if nat_count > total_count * 0.5:  # More than 50% failed
                     print("Warning: Time parsing mostly failed, falling back to date-only parsing for all records")
-                    df['timestamp'] = FuelParser._parse_timestamps(df['Transaction Date'])
+                    df['timestamp'] = FuelParser._parse_timestamps(df[date_col])
             else:
                 print("Warning: No valid time data found, using date-only parsing")
-                df['timestamp'] = FuelParser._parse_timestamps(df['Transaction Date'])
+                df['timestamp'] = FuelParser._parse_timestamps(df[date_col])
                 
-        elif 'Transaction Date' in df.columns:
-            print("Detected WEX format with combined date/time column")
-            df['timestamp'] = FuelParser._parse_timestamps(df['Transaction Date'])
+        elif date_col:
+            print(f"Detected single date/time column: '{date_col}'")
+            df['timestamp'] = FuelParser._parse_timestamps(df[date_col])
         
         # Map WEX column names to normalized format (swiss army knife - handles all variants)
         column_mapping = {
@@ -264,6 +266,57 @@ class FuelParser:
         print(f"Generic parser detected: {detected_cols}")
         
         return normalized_df
+    
+    @staticmethod
+    def _find_date_time_columns(columns):
+        """
+        Universal detection of date and time columns across ALL fuel card formats.
+        Returns (date_col, time_col) or (date_col, None) or (None, None)
+        """
+        columns_lower = [col.lower().strip() for col in columns]
+        
+        # Comprehensive date column patterns
+        date_patterns = [
+            'transaction date', 'trans date', 'fuel date', 'purchase date',
+            'date', 'trans_date', 'transaction_date', 'fuel_date', 'purchase_date',
+            'invoice_date', 'bill_date', 'card_date', 'service_date',
+            'datetime', 'timestamp', 'time_stamp'  # Sometimes these are date-only
+        ]
+        
+        # Comprehensive time column patterns  
+        time_patterns = [
+            'transaction time', 'trans time', 'fuel time', 'purchase time',
+            'time', 'trans_time', 'transaction_time', 'fuel_time', 'purchase_time',
+            'time_of_day', 'hour', 'clock_time', 'time_stamp'
+        ]
+        
+        # Find date column
+        date_col = None
+        for col, col_lower in zip(columns, columns_lower):
+            if col_lower in date_patterns:
+                date_col = col
+                break
+        
+        # Find time column (only if we found a date column)
+        time_col = None
+        if date_col:
+            for col, col_lower in zip(columns, columns_lower):
+                if col != date_col and col_lower in time_patterns:
+                    time_col = col
+                    break
+        
+        # If no separate date/time found, look for combined datetime column
+        if not date_col:
+            combined_patterns = [
+                'transaction date', 'trans date', 'fuel date', 'purchase date',
+                'date', 'datetime', 'timestamp', 'trans_date', 'transaction_date'
+            ]
+            for col, col_lower in zip(columns, columns_lower):
+                if col_lower in combined_patterns:
+                    date_col = col
+                    break
+        
+        return date_col, time_col
     
     @staticmethod
     def _parse_timestamps(timestamp_series: pd.Series) -> pd.Series:
