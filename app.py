@@ -664,33 +664,6 @@ def main():
                             violations_df = pd.DataFrame(violations)
                             st.dataframe(violations_df, use_container_width=True)
 
-def _display_violation_card(violation):
-    """Display a violation in a formatted card"""
-    
-    # Calculate color based on severity and confidence
-    severity = violation.get('severity', 'low')
-    confidence = violation.get('confidence', 0) * 100
-    
-    if severity == 'high':
-        color = "#ff4444"
-    elif severity == 'medium':
-        color = "#ff8800"
-    else:
-        color = "#ffaa00"
-    
-    st.markdown(f"""
-    <div style="border-left: 4px solid {color}; padding: 1rem; margin: 0.5rem 0; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-        <h4 style="margin: 0 0 0.5rem 0;">{violation['vehicle_id']} - {violation.get('detection_method', 'Unknown').replace('_', ' ').title()}</h4>
-        <p style="margin: 0 0 0.5rem 0;"><strong>Time:</strong> {violation['timestamp']}</p>
-        <p style="margin: 0 0 0.5rem 0;"><strong>Location:</strong> {violation.get('location', 'Unknown')}</p>
-        <p style="margin: 0 0 1rem 0;">{violation.get('description', 'No description available')}</p>
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span><strong>Confidence:</strong> {confidence:.0f}%</span>
-            <span><strong>Estimated Loss:</strong> ${violation.get('total_estimated_loss', 0):.2f}</span>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
     with tab4:
         st.header("📧 Generate & Send Report")
         
@@ -785,6 +758,33 @@ def _display_violation_card(violation):
                     st.info("📧 Set recipient email in sidebar to send reports")
                 elif not st.session_state.report_path:
                     st.info("📄 Generate report first")
+
+def _display_violation_card(violation):
+    """Display a violation in a formatted card"""
+    
+    # Calculate color based on severity and confidence
+    severity = violation.get('severity', 'low')
+    confidence = violation.get('confidence', 0) * 100
+    
+    if severity == 'high':
+        color = "#ff4444"
+    elif severity == 'medium':
+        color = "#ff8800"
+    else:
+        color = "#ffaa00"
+    
+    st.markdown(f"""
+    <div style="border-left: 4px solid {color}; padding: 1rem; margin: 0.5rem 0; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h4 style="margin: 0 0 0.5rem 0;">{violation['vehicle_id']} - {violation.get('detection_method', 'Unknown').replace('_', ' ').title()}</h4>
+        <p style="margin: 0 0 0.5rem 0;"><strong>Time:</strong> {violation['timestamp']}</p>
+        <p style="margin: 0 0 0.5rem 0;"><strong>Location:</strong> {violation.get('location', 'Unknown')}</p>
+        <p style="margin: 0 0 1rem 0;">{violation.get('description', 'No description available')}</p>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span><strong>Confidence:</strong> {confidence:.0f}%</span>
+            <span><strong>Estimated Loss:</strong> ${violation.get('total_estimated_loss', 0):.2f}</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
