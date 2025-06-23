@@ -497,6 +497,19 @@ def main():
                 else:
                     enable_enhanced_fuel = False
                 
+                # MPG Analysis option if we have both GPS and fuel data
+                if st.session_state.gps_data is not None and st.session_state.fuel_data is not None:
+                    enable_mpg_analysis = st.checkbox(
+                        "🏃 MPG Fraud Detection",
+                        value=True,
+                        help="Advanced detection using miles per gallon analysis to catch odometer fraud, fuel dumping, and idle refills"
+                    )
+                    
+                    if enable_mpg_analysis:
+                        st.info("**💡 MPG Analysis detects:**\n- Odometer manipulation (false mileage reports)\n- Fuel dumping (fuel sold/transferred elsewhere)\n- Excessive idling (poor fuel efficiency)\n- Idle refills (fuel used but no miles driven)")
+                else:
+                    enable_mpg_analysis = False
+                
                 # Show fuel-only analysis option if we have fuel data but no GPS
                 if st.session_state.fuel_data is not None and st.session_state.gps_data is None:
                     enable_fuel_analysis = st.checkbox(
@@ -517,25 +530,32 @@ def main():
                         # Use the auditor we already initialized above
                         # (it already has the data loaded and overlap analysis done)
                         
-                        # Run audit with custom parameters
+                        # Run comprehensive audit with all detection methods
                         audit_results = auditor.run_full_audit(
                             enable_fuel_only_analysis=enable_fuel_analysis,
-                            enable_enhanced_fuel_detection=enable_enhanced_fuel
+                            enable_enhanced_fuel_detection=enable_enhanced_fuel,
+                            enable_mpg_analysis=enable_mpg_analysis
                         )
                         summary_stats = auditor.get_summary_stats()
                         
                         # Store results in session state
                         st.session_state.audit_results = audit_results
-                        st.session_state.summary_stats = summary_stats
                         st.session_state.auditor = auditor
                         
-                        st.success("✅ Audit completed successfully!")
+                        st.success("✅ Comprehensive audit completed successfully!")
                         
-                        # Show quick summary
-                        total_violations = summary_stats.get('total_violations', 0)
+                        # Show financial impact summary
+                        financial_summary = audit_results.get('financial_summary', {})
+                        consolidated_violations = audit_results.get('consolidated_violations', [])
                         
-                        if total_violations > 0:
-                            st.warning(f"⚠️ Found {total_violations} potential violations")
+                        if consolidated_violations:
+                            total_loss = financial_summary.get('total_fleet_loss', 0)
+                            vehicles_flagged = financial_summary.get('vehicles_flagged', 0)
+                            
+                            st.error(f"⚠️ **{len(consolidated_violations)} incidents detected** affecting {vehicles_flagged} vehicles")
+                            if total_loss > 0:
+                                weekly_estimate = financial_summary.get('weekly_fleet_estimate', 0)
+                                st.error(f"💰 **Estimated financial impact: ${total_loss:.2f}** (${weekly_estimate:.2f}/week)")
                         else:
                             st.success("🎉 No violations detected!")
                         
@@ -545,64 +565,131 @@ def main():
                         st.code(traceback.format_exc())
     
     with tab3:
-        st.header("📊 Audit Results")
+        st.header("📊 Comprehensive Audit Results")
         
         if st.session_state.audit_results is None:
             st.info("No audit results available. Please run an audit first.")
         else:
             results = st.session_state.audit_results
-            summary = st.session_state.summary_stats
+            financial_summary = results.get('financial_summary', {})
+            consolidated_violations = results.get('consolidated_violations', [])
             
-            # Summary metrics
-            st.subheader("📈 Summary")
-            
-            col1, col2, col3, col4 = st.columns(4)
-            
-            with col1:
-                st.metric(
-                    "Total Violations",
-                    summary.get('total_violations', 0),
-                    delta=None
-                )
-            
-            with col2:
-                st.metric(
-                    "Vehicles Flagged",
-                    summary.get('vehicles_with_violations', 0),
-                    delta=None
-                )
-            
-            with col3:
-                fuel_violations = len(results.get('fuel_theft', [])) + len(results.get('fuel_anomalies', []))
-                st.metric(
-                    "Fuel Issues",
-                    fuel_violations,
-                    delta=None
-                )
-            
-            with col4:
-                st.metric(
-                    "Ghost Jobs",
-                    len(results.get('ghost_jobs', [])),
-                    delta=None
-                )
-            
-            # Detailed results
-            st.subheader("🔍 Detailed Violations")
-            
-            for violation_type, violations in results.items():
-                if violations:
-                    violation_names = {
-                        'fuel_theft': '🚨 Potential Fuel Theft',
-                        'fuel_anomalies': '🔬 Fuel Pattern Anomalies',
-                        'ghost_jobs': '👻 Ghost Jobs',
-                        'idle_abuse': '⏰ Excessive Idling',
-                        'after_hours_driving': '🌙 After Hours Activity'
-                    }
+            # Financial Impact Summary
+            if financial_summary:
+                st.subheader("💰 Financial Impact Analysis")
+                
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    st.metric(
+                        "Total Fleet Loss",
+                        f"${financial_summary.get('total_fleet_loss', 0):.2f}",
+                        delta=None
+                    )
+                
+                with col2:
+                    st.metric(
+                        "Weekly Estimate",
+                        f"${financial_summary.get('weekly_fleet_estimate', 0):.2f}",
+                        delta=None
+                    )
+                
+                with col3:
+                    st.metric(
+                        "Incidents Detected",
+                        len(consolidated_violations),
+                        delta=None
+                    )
+                
+                with col4:
+                    st.metric(
+                        "Vehicles Flagged",
+                        financial_summary.get('vehicles_flagged', 0),
+                        delta=None
+                    )
+                
+                # Vehicle-specific financial impact
+                vehicle_summaries = financial_summary.get('vehicle_summaries', {})
+                if vehicle_summaries:
+                    st.subheader("🚗 Per-Vehicle Financial Impact")
                     
-                    with st.expander(f"{violation_names.get(violation_type, violation_type)} ({len(violations)} incidents)"):
-                        violations_df = pd.DataFrame(violations)
-                        st.dataframe(violations_df, use_container_width=True)
+                    for vehicle_id, summary in vehicle_summaries.items():
+                        with st.expander(f"**{vehicle_id}** - ${summary['total_loss']:.2f} total loss"):
+                            col1, col2, col3 = st.columns(3)
+                            
+                            with col1:
+                                st.write(f"**Total Loss:** ${summary['total_loss']:.2f}")
+                                st.write(f"**Violations:** {summary['violation_count']}")
+                            
+                            with col2:
+                                st.write(f"**Weekly Est:** ${summary['weekly_estimate']:.2f}")
+                                st.write(f"**Monthly Est:** ${summary['monthly_estimate']:.2f}")
+                            
+                            with col3:
+                                st.write(f"**Worst Incident:** ${summary['highest_single_incident']:.2f}")
+                                st.write(f"**Detection Methods:** {len(summary['violation_methods'])}")
+                            
+                            st.info(summary['summary_text'])
+            
+            # Consolidated Violations
+            if consolidated_violations:
+                st.subheader("🔍 Incident Details")
+                
+                # Group by severity
+                high_severity = [v for v in consolidated_violations if v.get('severity') == 'high']
+                medium_severity = [v for v in consolidated_violations if v.get('severity') == 'medium']
+                low_severity = [v for v in consolidated_violations if v.get('severity') == 'low']
+                
+                if high_severity:
+                    with st.expander(f"🚨 **HIGH SEVERITY** ({len(high_severity)} incidents)", expanded=True):
+                        for violation in high_severity:
+                            self._display_violation_card(violation)
+                
+                if medium_severity:
+                    with st.expander(f"⚠️ **MEDIUM SEVERITY** ({len(medium_severity)} incidents)", expanded=False):
+                        for violation in medium_severity:
+                            self._display_violation_card(violation)
+                
+                if low_severity:
+                    with st.expander(f"ℹ️ **LOW SEVERITY** ({len(low_severity)} incidents)", expanded=False):
+                        for violation in low_severity:
+                            self._display_violation_card(violation)
+            
+            # Raw data view for debugging
+            if st.checkbox("🔧 Show raw audit data (debug)"):
+                raw_violations = results.get('raw_violations', {})
+                for violation_type, violations in raw_violations.items():
+                    if violations:
+                        with st.expander(f"Raw {violation_type} ({len(violations)} items)"):
+                            violations_df = pd.DataFrame(violations)
+                            st.dataframe(violations_df, use_container_width=True)
+
+def _display_violation_card(violation):
+    """Display a violation in a formatted card"""
+    
+    # Calculate color based on severity and confidence
+    severity = violation.get('severity', 'low')
+    confidence = violation.get('confidence', 0) * 100
+    
+    if severity == 'high':
+        color = "#ff4444"
+    elif severity == 'medium':
+        color = "#ff8800"
+    else:
+        color = "#ffaa00"
+    
+    st.markdown(f"""
+    <div style="border-left: 4px solid {color}; padding: 1rem; margin: 0.5rem 0; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h4 style="margin: 0 0 0.5rem 0;">{violation['vehicle_id']} - {violation.get('detection_method', 'Unknown').replace('_', ' ').title()}</h4>
+        <p style="margin: 0 0 0.5rem 0;"><strong>Time:</strong> {violation['timestamp']}</p>
+        <p style="margin: 0 0 0.5rem 0;"><strong>Location:</strong> {violation.get('location', 'Unknown')}</p>
+        <p style="margin: 0 0 1rem 0;">{violation.get('description', 'No description available')}</p>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span><strong>Confidence:</strong> {confidence:.0f}%</span>
+            <span><strong>Estimated Loss:</strong> ${violation.get('total_estimated_loss', 0):.2f}</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
     with tab4:
         st.header("📧 Generate & Send Report")

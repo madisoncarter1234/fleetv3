@@ -8,6 +8,8 @@ from .utils import (
 )
 from .fuel_only_analyzer import FuelOnlyAnalyzer
 from .enhanced_fuel_detector import EnhancedFuelDetector
+from .mpg_analyzer import MPGAnalyzer
+from .violation_deduplicator import ViolationDeduplicator
 
 class FleetAuditor:
     """Main class for detecting fleet violations"""
@@ -182,40 +184,91 @@ class FleetAuditor:
         return filter_business_hours_violations(self.gps_data, start_hour, end_hour)
     
     def run_full_audit(self, enable_fuel_only_analysis: bool = False, 
-                      enable_enhanced_fuel_detection: bool = True) -> Dict[str, List[Dict]]:
-        """Run all violation detection algorithms and return results"""
+                      enable_enhanced_fuel_detection: bool = True,
+                      enable_mpg_analysis: bool = True,
+                      vehicle_types: Dict[str, str] = None) -> Dict:
+        """
+        Run comprehensive fleet audit with all detection methods
+        
+        Returns consolidated results with financial impact analysis
+        """
         if not any([self.gps_data is not None, self.fuel_data is not None, self.job_data is not None]):
             raise ValueError("At least one data source (GPS, fuel, or jobs) must be loaded before running audit")
         
-        audit_results = {
-            'ghost_jobs': self.detect_ghost_jobs(),
-            'idle_abuse': self.detect_idle_abuse(),
-            'after_hours_driving': self.detect_after_hours_driving()
-        }
+        all_violations = []
+        audit_results = {}
         
-        # Enhanced fuel theft detection (replaces basic GPS-only detection)
+        # Traditional violation detection
+        audit_results['ghost_jobs'] = self.detect_ghost_jobs()
+        audit_results['idle_abuse'] = self.detect_idle_abuse()
+        audit_results['after_hours_driving'] = self.detect_after_hours_driving()
+        
+        # Enhanced fuel theft detection
         if self.fuel_data is not None and enable_enhanced_fuel_detection:
             enhanced_detector = EnhancedFuelDetector()
             enhanced_fuel_violations = enhanced_detector.detect_enhanced_fuel_theft(
                 self.fuel_data, self.gps_data
             )
-            audit_results['fuel_theft'] = enhanced_fuel_violations
+            audit_results['enhanced_fuel_theft'] = enhanced_fuel_violations
+            all_violations.extend(enhanced_fuel_violations)
         else:
             # Fallback to basic GPS-only detection
-            audit_results['fuel_theft'] = self.detect_fuel_theft()
+            fuel_violations = self.detect_fuel_theft()
+            audit_results['fuel_theft'] = fuel_violations
+            all_violations.extend(fuel_violations)
         
-        # Add fuel-only analysis if enabled and we have fuel data but no GPS
+        # MPG-based fraud detection
+        if (enable_mpg_analysis and self.fuel_data is not None and 
+            self.gps_data is not None and not self.fuel_data.empty and not self.gps_data.empty):
+            
+            mpg_analyzer = MPGAnalyzer()
+            mpg_violations = []
+            
+            # Analyze each vehicle
+            for vehicle_id in self.fuel_data['vehicle_id'].unique():
+                if pd.notna(vehicle_id):
+                    # Determine vehicle type
+                    vehicle_type = self._get_vehicle_type(vehicle_id, vehicle_types)
+                    
+                    vehicle_mpg_violations = mpg_analyzer.analyze_vehicle_mpg(
+                        self.fuel_data, self.gps_data, vehicle_id, vehicle_type
+                    )
+                    mpg_violations.extend(vehicle_mpg_violations)
+            
+            audit_results['mpg_analysis'] = mpg_violations
+            all_violations.extend(mpg_violations)
+        
+        # Add fuel-only analysis if enabled
         if enable_fuel_only_analysis and self.fuel_data is not None:
             fuel_analyzer = FuelOnlyAnalyzer()
             fuel_only_results = fuel_analyzer.analyze_fuel_patterns(self.fuel_data)
-            audit_results.update(fuel_only_results)
+            for key, violations in fuel_only_results.items():
+                audit_results[f"fuel_only_{key}"] = violations
+                all_violations.extend(violations)
         
-        # Store all violations for reporting
-        self.violations = []
-        for violation_type, violations in audit_results.items():
-            self.violations.extend(violations)
+        # Deduplicate and consolidate violations
+        deduplicator = ViolationDeduplicator()
+        consolidated_violations = deduplicator.deduplicate_violations(all_violations)
         
-        return audit_results
+        # Calculate financial impact
+        financial_summary = deduplicator.generate_financial_summary(
+            consolidated_violations, 
+            time_period_days=self._calculate_audit_period_days()
+        )
+        
+        # Store results
+        self.violations = consolidated_violations
+        
+        # Return comprehensive results
+        return {
+            'raw_violations': audit_results,
+            'consolidated_violations': consolidated_violations,
+            'financial_summary': financial_summary,
+            'overlap_warnings': self.get_overlap_warnings(),
+            'data_quality': self._get_data_quality_summary(),
+            'audit_period_days': self._calculate_audit_period_days(),
+            'vehicles_analyzed': self._get_vehicles_analyzed()
+        }
     
     def get_summary_stats(self) -> Dict:
         """Get summary statistics of violations"""
@@ -372,3 +425,90 @@ class FleetAuditor:
             ].copy()
         
         return data1 if data1 is not None else pd.DataFrame(), data2 if data2 is not None else pd.DataFrame()
+    
+    def _get_vehicle_type(self, vehicle_id: str, vehicle_types: Dict[str, str] = None) -> str:
+        """Determine vehicle type for MPG analysis"""
+        if vehicle_types and vehicle_id in vehicle_types:
+            return vehicle_types[vehicle_id]
+        
+        # Auto-detect based on vehicle ID naming patterns
+        vehicle_id_lower = str(vehicle_id).lower()
+        
+        if any(keyword in vehicle_id_lower for keyword in ['truck', 'semi', 'tractor', 'freight']):
+            return 'truck'
+        elif any(keyword in vehicle_id_lower for keyword in ['van', 'delivery', 'cargo']):
+            return 'van'
+        elif any(keyword in vehicle_id_lower for keyword in ['pickup', 'f150', 'f250', 'silverado', 'ram']):
+            return 'pickup'
+        elif any(keyword in vehicle_id_lower for keyword in ['car', 'sedan', 'civic', 'corolla', 'accord']):
+            return 'car'
+        else:
+            return 'default'  # Conservative commercial vehicle estimate
+    
+    def _calculate_audit_period_days(self) -> int:
+        """Calculate the time span of the audit data"""
+        all_dates = []
+        
+        if self.gps_data is not None and not self.gps_data.empty:
+            all_dates.extend(self.gps_data['timestamp'].tolist())
+        
+        if self.fuel_data is not None and not self.fuel_data.empty:
+            all_dates.extend(self.fuel_data['timestamp'].tolist())
+        
+        if self.job_data is not None and not self.job_data.empty:
+            all_dates.extend(self.job_data['scheduled_time'].tolist())
+        
+        if not all_dates:
+            return 7  # Default to 1 week
+        
+        min_date = min(all_dates)
+        max_date = max(all_dates)
+        
+        return max(1, (max_date - min_date).days + 1)
+    
+    def _get_data_quality_summary(self) -> Dict:
+        """Get overall data quality assessment"""
+        summary = {
+            'has_gps': self.gps_data is not None and not self.gps_data.empty,
+            'has_fuel': self.fuel_data is not None and not self.fuel_data.empty,
+            'has_jobs': self.job_data is not None and not self.job_data.empty,
+            'gps_records': len(self.gps_data) if self.gps_data is not None else 0,
+            'fuel_records': len(self.fuel_data) if self.fuel_data is not None else 0,
+            'job_records': len(self.job_data) if self.job_data is not None else 0
+        }
+        
+        # Assess fuel data quality if available
+        if summary['has_fuel']:
+            from .enhanced_fuel_detector import EnhancedFuelDetector
+            detector = EnhancedFuelDetector()
+            fuel_quality = detector.get_data_quality_summary(self.fuel_data)
+            summary['fuel_quality'] = fuel_quality
+        
+        # Assess cross-referencing capability
+        summary['can_cross_reference'] = {
+            'fuel_gps': summary['has_fuel'] and summary['has_gps'],
+            'job_gps': summary['has_jobs'] and summary['has_gps'],
+            'mpg_analysis': summary['has_fuel'] and summary['has_gps']
+        }
+        
+        return summary
+    
+    def _get_vehicles_analyzed(self) -> Dict:
+        """Get summary of vehicles in the analysis"""
+        vehicles = set()
+        
+        if self.gps_data is not None:
+            vehicles.update(self.gps_data['vehicle_id'].dropna().unique())
+        
+        if self.fuel_data is not None:
+            vehicles.update(self.fuel_data['vehicle_id'].dropna().unique())
+        
+        if self.job_data is not None and 'driver_id' in self.job_data.columns:
+            vehicles.update(self.job_data['driver_id'].dropna().unique())
+        
+        return {
+            'total_vehicles': len(vehicles),
+            'vehicle_ids': sorted(list(vehicles)),
+            'vehicles_with_gps': len(self.gps_data['vehicle_id'].unique()) if self.gps_data is not None else 0,
+            'vehicles_with_fuel': len(self.fuel_data['vehicle_id'].unique()) if self.fuel_data is not None else 0
+        }
