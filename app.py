@@ -814,7 +814,7 @@ def _display_violation_card(violation):
     
     st.markdown(f"""
     <div style="border-left: 4px solid {color}; padding: 1rem; margin: 0.5rem 0; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-        <h4 style="margin: 0 0 0.5rem 0;">{violation['vehicle_id']} - {violation.get('detection_method', 'Unknown').replace('_', ' ').title()}</h4>
+        <h4 style="margin: 0 0 0.5rem 0;">{violation['vehicle_id']} - {str(violation.get('detection_method', 'Unknown')).replace('_', ' ').title()}</h4>
         <p style="margin: 0 0 0.5rem 0;"><strong>Time:</strong> {violation['timestamp']}</p>
         <p style="margin: 0 0 0.5rem 0;"><strong>Location:</strong> {violation.get('location', 'Unknown')}</p>
         <p style="margin: 0 0 1rem 0;">{violation.get('description', 'No description available')}</p>

@@ -148,6 +148,9 @@ class EnhancedFuelDetector:
                 
                 # Check 1: Single purchase exceeds tank capacity
                 if gallons > tank_capacity:
+                    excess_gallons = gallons - tank_capacity
+                    estimated_loss = excess_gallons * 3.75  # Average fuel cost per gallon
+                    
                     violations.append({
                         'vehicle_id': vehicle_id,
                         'timestamp': purchase['timestamp'],
@@ -156,6 +159,8 @@ class EnhancedFuelDetector:
                         'description': f"Purchase of {gallons:.1f} gallons exceeds tank capacity ({tank_capacity} gallons) - likely filling personal vehicle too",
                         'location': purchase['location'],
                         'gallons': gallons,
+                        'excess_gallons': excess_gallons,
+                        'estimated_loss': estimated_loss,
                         'severity': 'high',
                         'confidence': 0.95
                     })
@@ -203,6 +208,9 @@ class EnhancedFuelDetector:
                             confidence = 0.80
                             note = " - Different locations may indicate legitimate travel"
                         
+                        # Estimate financial loss (assume 50% of rapid refill is wasted/stolen)
+                        estimated_loss = gallons * 3.75 * 0.5
+                        
                         violations.append({
                             'vehicle_id': vehicle_id,
                             'timestamp': purchase['timestamp'],
@@ -214,6 +222,7 @@ class EnhancedFuelDetector:
                             'previous_gallons': last_purchase['gallons'],
                             'hours_between': hours_since_last,
                             'total_gallons': total_gallons,
+                            'estimated_loss': estimated_loss,
                             'severity': 'high' if confidence > 0.8 else 'medium',
                             'confidence': confidence
                         })
@@ -320,6 +329,9 @@ class EnhancedFuelDetector:
                 
                 # Flag purchases that are statistical outliers (3+ standard deviations)
                 if amount_zscore > 3.0 and purchase['amount'] > avg_amount:
+                    excess_amount = purchase['amount'] - avg_amount
+                    estimated_loss = excess_amount * 0.7  # Assume 70% of excess is fraud
+                    
                     violations.append({
                         'vehicle_id': vehicle_id,
                         'timestamp': purchase['timestamp'],
@@ -330,6 +342,7 @@ class EnhancedFuelDetector:
                         'gallons': purchase['gallons'],
                         'amount': purchase['amount'],
                         'deviation_score': amount_zscore,
+                        'estimated_loss': estimated_loss,
                         'severity': 'medium',
                         'confidence': 0.70
                     })
@@ -372,6 +385,10 @@ class EnhancedFuelDetector:
                             confidence = 0.55
                             note = " - Multiple small purchases may be legitimate equipment/fleet operations"
                         
+                        # Estimate financial loss (excess over normal capacity)
+                        excess_gallons = total_gallons - tank_capacity
+                        estimated_loss = excess_gallons * 3.75
+                        
                         violations.append({
                             'vehicle_id': vehicle_id,
                             'timestamp': day_purchases['timestamp'].min(),
@@ -382,6 +399,7 @@ class EnhancedFuelDetector:
                             'gallons': total_gallons,
                             'amount': total_amount,
                             'purchase_count': len(day_purchases),
+                            'estimated_loss': estimated_loss,
                             'severity': 'high' if confidence > 0.7 else 'medium',
                             'confidence': confidence
                         })
