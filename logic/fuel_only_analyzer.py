@@ -36,12 +36,13 @@ class FuelOnlyAnalyzer:
         violations = []
         
         # Check if timestamps have time information or are date-only
-        # First filter out NaT values, then check for midnight times
-        valid_timestamps = fuel_df['timestamp'].dropna()
-        if len(valid_timestamps) == 0:
+        # First filter out NaT values from the DataFrame itself
+        fuel_df_clean = fuel_df.dropna(subset=['timestamp'])
+        if len(fuel_df_clean) == 0:
             print("Warning: No valid timestamps found. Skipping time-based analysis.")
             return violations
             
+        valid_timestamps = fuel_df_clean['timestamp']
         timestamps_with_time = valid_timestamps.dt.time != pd.Timestamp('00:00:00').time()
         has_time_data = timestamps_with_time.any()
         
@@ -49,7 +50,7 @@ class FuelOnlyAnalyzer:
             print("Warning: All timestamps are midnight (00:00) - likely date-only data. Skipping time-based analysis.")
             return violations
         
-        for _, purchase in fuel_df.iterrows():
+        for _, purchase in fuel_df_clean.iterrows():
             timestamp = purchase['timestamp']
             
             # Skip if timestamp is NaT (failed to parse)
@@ -151,8 +152,14 @@ class FuelOnlyAnalyzer:
         """Detect unusual purchase frequency patterns"""
         violations = []
         
+        # Filter out NaT values first
+        fuel_df_clean = fuel_df.dropna(subset=['timestamp'])
+        if len(fuel_df_clean) == 0:
+            print("Warning: No valid timestamps found for frequency analysis.")
+            return violations
+        
         # Group by vehicle to analyze frequency
-        for vehicle_id, vehicle_data in fuel_df.groupby('vehicle_id'):
+        for vehicle_id, vehicle_data in fuel_df_clean.groupby('vehicle_id'):
             if len(vehicle_data) < 4:  # Need minimum data
                 continue
             
@@ -207,8 +214,14 @@ class FuelOnlyAnalyzer:
         """Detect unusual location patterns"""
         violations = []
         
+        # Filter out NaT values first
+        fuel_df_clean = fuel_df.dropna(subset=['timestamp'])
+        if len(fuel_df_clean) == 0:
+            print("Warning: No valid timestamps found for location analysis.")
+            return violations
+        
         # Group by vehicle to analyze location patterns
-        for vehicle_id, vehicle_data in fuel_df.groupby('vehicle_id'):
+        for vehicle_id, vehicle_data in fuel_df_clean.groupby('vehicle_id'):
             if len(vehicle_data) < 5:  # Need minimum data
                 continue
             
@@ -248,12 +261,13 @@ class FuelOnlyAnalyzer:
         violations = []
         
         # Check if timestamps have time information
-        # First filter out NaT values, then check for midnight times
-        valid_timestamps = fuel_df['timestamp'].dropna()
-        if len(valid_timestamps) == 0:
+        # First filter out NaT values from the DataFrame itself
+        fuel_df_clean = fuel_df.dropna(subset=['timestamp'])
+        if len(fuel_df_clean) == 0:
             print("Warning: No valid timestamps found for rapid succession analysis.")
             return violations
             
+        valid_timestamps = fuel_df_clean['timestamp']
         timestamps_with_time = valid_timestamps.dt.time != pd.Timestamp('00:00:00').time()
         has_time_data = timestamps_with_time.any()
         
@@ -262,7 +276,7 @@ class FuelOnlyAnalyzer:
             return violations
         
         # Sort by timestamp for sequence analysis
-        fuel_df_sorted = fuel_df.sort_values(['vehicle_id', 'timestamp'])
+        fuel_df_sorted = fuel_df_clean.sort_values(['vehicle_id', 'timestamp'])
         
         # Group by vehicle for sequential analysis
         for vehicle_id, vehicle_data in fuel_df_sorted.groupby('vehicle_id'):
