@@ -290,6 +290,11 @@ class FuelOnlyAnalyzer:
                 if pd.isna(current['timestamp']) or pd.isna(next_purchase['timestamp']):
                     continue
                 
+                # Skip if either timestamp is midnight (date-only data)
+                if (current['timestamp'].time() == pd.Timestamp('00:00:00').time() or 
+                    next_purchase['timestamp'].time() == pd.Timestamp('00:00:00').time()):
+                    continue
+                
                 time_diff = (next_purchase['timestamp'] - current['timestamp']).total_seconds() / 3600  # hours
                 
                 # Flag purchases too close together in time
