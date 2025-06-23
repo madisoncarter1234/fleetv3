@@ -44,18 +44,30 @@ class AIViolationInsights:
             violation['ai_insights'] = {'error': str(e)}
             return violation
     
-    def analyze_violations_batch(self, violations: List[Dict], context_data: Dict = None) -> List[Dict]:
-        """Analyze multiple violations with AI insights"""
+    def analyze_violations_batch(self, violations: List[Dict], context_data: Dict = None, max_violations: int = 10) -> List[Dict]:
+        """Analyze multiple violations with AI insights (limited for performance)"""
         enhanced_violations = []
         
-        for violation in violations:
+        # Limit the number of violations to analyze to prevent timeouts
+        violations_to_analyze = violations[:max_violations]
+        remaining_violations = violations[max_violations:]
+        
+        print(f"Analyzing {len(violations_to_analyze)} violations with AI (limit: {max_violations})")
+        
+        for i, violation in enumerate(violations_to_analyze):
             try:
+                print(f"Analyzing violation {i+1}/{len(violations_to_analyze)}")
                 enhanced = self.analyze_violation(violation, context_data)
                 enhanced_violations.append(enhanced)
             except Exception as e:
-                print(f"Failed to analyze violation: {e}")
+                print(f"Failed to analyze violation {i+1}: {e}")
                 violation['ai_insights'] = {'error': str(e)}
                 enhanced_violations.append(violation)
+        
+        # Add remaining violations without AI analysis
+        for violation in remaining_violations:
+            violation['ai_insights'] = {'note': 'Not analyzed - exceeds batch limit'}
+            enhanced_violations.append(violation)
         
         return enhanced_violations
     
@@ -112,6 +124,7 @@ Return ONLY a JSON object with this format:
                 model="claude-3-5-sonnet-20241022",
                 max_tokens=1000,
                 temperature=0.3,
+                timeout=30.0,  # 30 second timeout
                 messages=[{"role": "user", "content": prompt}]
             )
             
@@ -173,6 +186,7 @@ Keep it concise and actionable for fleet managers.
                 model="claude-3-5-sonnet-20241022",
                 max_tokens=300,
                 temperature=0.3,
+                timeout=15.0,  # 15 second timeout for summary
                 messages=[{"role": "user", "content": prompt}]
             )
             
