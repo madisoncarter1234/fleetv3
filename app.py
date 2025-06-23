@@ -536,7 +536,6 @@ def main():
                             enable_enhanced_fuel_detection=enable_enhanced_fuel,
                             enable_mpg_analysis=enable_mpg_analysis
                         )
-                        summary_stats = auditor.get_summary_stats()
                         
                         # Store results in session state
                         st.session_state.audit_results = audit_results
@@ -678,9 +677,29 @@ def main():
                 # Generate report preview
                 try:
                     generator = ReportGenerator()
+                    
+                    # Create summary stats from new audit results structure
+                    financial_summary = st.session_state.audit_results.get('financial_summary', {})
+                    consolidated_violations = st.session_state.audit_results.get('consolidated_violations', [])
+                    
+                    summary_stats = {
+                        'total_violations': len(consolidated_violations),
+                        'vehicles_with_violations': financial_summary.get('vehicles_flagged', 0),
+                        'violations_by_type': {},
+                        'date_range': {
+                            'start': start_date,
+                            'end': end_date
+                        }
+                    }
+                    
+                    # Count violations by type
+                    for violation in consolidated_violations:
+                        v_type = violation.get('violation_type', 'unknown')
+                        summary_stats['violations_by_type'][v_type] = summary_stats['violations_by_type'].get(v_type, 0) + 1
+                    
                     html_preview = generator.generate_html_report(
                         st.session_state.audit_results,
-                        st.session_state.summary_stats,
+                        summary_stats,
                         st.session_state.company_name,
                         start_date.strftime('%Y-%m-%d'),
                         end_date.strftime('%Y-%m-%d')
@@ -700,9 +719,29 @@ def main():
                     with st.spinner("Generating report..."):
                         try:
                             generator = ReportGenerator()
+                            
+                            # Create summary stats from new audit results structure
+                            financial_summary = st.session_state.audit_results.get('financial_summary', {})
+                            consolidated_violations = st.session_state.audit_results.get('consolidated_violations', [])
+                            
+                            summary_stats = {
+                                'total_violations': len(consolidated_violations),
+                                'vehicles_with_violations': financial_summary.get('vehicles_flagged', 0),
+                                'violations_by_type': {},
+                                'date_range': {
+                                    'start': start_date,
+                                    'end': end_date
+                                }
+                            }
+                            
+                            # Count violations by type
+                            for violation in consolidated_violations:
+                                v_type = violation.get('violation_type', 'unknown')
+                                summary_stats['violations_by_type'][v_type] = summary_stats['violations_by_type'].get(v_type, 0) + 1
+                            
                             report_path = generator.generate_pdf_report(
                                 st.session_state.audit_results,
-                                st.session_state.summary_stats,
+                                summary_stats,
                                 st.session_state.company_name,
                                 start_date.strftime('%Y-%m-%d'),
                                 end_date.strftime('%Y-%m-%d')
