@@ -109,7 +109,7 @@ Return ONLY a JSON object with this format:
         
         try:
             response = self.client.messages.create(
-                model="claude-3-sonnet-20240229",
+                model="claude-3-5-sonnet-20241022",
                 max_tokens=1000,
                 temperature=0.3,
                 messages=[{"role": "user", "content": prompt}]
@@ -170,7 +170,7 @@ Keep it concise and actionable for fleet managers.
         
         try:
             response = self.client.messages.create(
-                model="claude-3-sonnet-20240229",
+                model="claude-3-5-sonnet-20241022",
                 max_tokens=300,
                 temperature=0.3,
                 messages=[{"role": "user", "content": prompt}]
