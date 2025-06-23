@@ -690,7 +690,7 @@ def _display_violation_card(violation):
         </div>
     </div>
     """, unsafe_allow_html=True)
-    
+
     with tab4:
         st.header("📧 Generate & Send Report")
         
