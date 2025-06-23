@@ -244,7 +244,18 @@ def main():
                     # FUCK THE MANUAL LOGIC - 100% AI EVERYTHING
                     from parsers.ai_only_parser import AIOnlyParser
                     ai_parser = AIOnlyParser()
-                    ai_result = ai_parser.parse_and_detect_violations(tmp_path)
+                    
+                    # Prepare GPS and job data for AI if available
+                    gps_csv_data = None
+                    job_csv_data = None
+                    
+                    if st.session_state.gps_data is not None:
+                        gps_csv_data = st.session_state.gps_data.to_csv(index=False)
+                    
+                    if st.session_state.job_data is not None:
+                        job_csv_data = st.session_state.job_data.to_csv(index=False)
+                    
+                    ai_result = ai_parser.parse_and_detect_violations(tmp_path, gps_csv_data, job_csv_data)
                     
                     if 'dataframe' in ai_result and len(ai_result['dataframe']) > 0:
                         fuel_data = ai_result['dataframe']

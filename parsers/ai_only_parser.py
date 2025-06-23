@@ -10,23 +10,53 @@ class AIOnlyParser:
     def __init__(self, api_key: Optional[str] = None):
         self.client = Anthropic(api_key=api_key or os.getenv('ANTHROPIC_API_KEY'))
     
-    def parse_and_detect_violations(self, file_path: str) -> Dict:
+    def parse_and_detect_violations(self, file_path: str, gps_data: str = None, job_data: str = None) -> Dict:
         """
         Let AI do EVERYTHING:
-        1. Parse the CSV
+        1. Parse the fuel CSV
         2. Normalize the data  
-        3. Detect violations
-        4. Return clean results
+        3. Cross-reference with GPS/job data if provided
+        4. Detect violations
+        5. Return clean results
         """
-        # Read raw CSV
+        # Read raw fuel CSV
         with open(file_path, 'r') as f:
-            csv_content = f.read()
+            fuel_csv_content = f.read()
         
+        # Build prompt with all available data
         prompt = f"""
 You are a fleet audit expert. Analyze this fuel card CSV and detect violations.
 
-CSV DATA:
-{csv_content}
+FUEL CARD DATA:
+{fuel_csv_content}"""
+        
+        # Add GPS data if provided
+        if gps_data:
+            prompt += f"""
+
+GPS TRACKING DATA:
+{gps_data}
+
+ENHANCED DETECTION WITH GPS:
+- Match fuel purchases to actual vehicle locations
+- Detect stolen card use (fuel purchase without truck present)
+- Calculate MPG efficiency and flag anomalies
+- Verify vehicles were actually at gas stations during purchases"""
+        
+        # Add job data if provided
+        if job_data:
+            prompt += f"""
+
+JOB ASSIGNMENT DATA:
+{job_data}
+
+ENHANCED DETECTION WITH JOB DATA:
+- Flag fuel purchases far from assigned job sites
+- Detect personal use (fuel near employee homes, not job sites)
+- Match fuel timing with scheduled work hours
+- Identify route deviations for personal errands"""
+        
+        prompt += """
 
 TASK:
 1. Parse the CSV and understand the columns
