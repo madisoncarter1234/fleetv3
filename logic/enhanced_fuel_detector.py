@@ -382,6 +382,11 @@ class EnhancedFuelDetector:
             
             for date, day_purchases in daily_groups:
                 if len(day_purchases) > 1:
+                    # Skip if any purchase in this group has midnight timestamp (date-only data)
+                    has_midnight = (day_purchases['timestamp'].dt.time == pd.Timestamp('00:00:00').time()).any()
+                    if has_midnight:
+                        print(f"Warning: Skipping frequency analysis for {vehicle_id} on {date} - contains midnight timestamps (likely date-only data)")
+                        continue
                     total_gallons = day_purchases['gallons'].sum()
                     total_amount = day_purchases['amount'].sum() if 'amount' in day_purchases.columns else None
                     
