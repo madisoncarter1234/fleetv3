@@ -36,7 +36,13 @@ class FuelOnlyAnalyzer:
         violations = []
         
         # Check if timestamps have time information or are date-only
-        timestamps_with_time = fuel_df['timestamp'].dt.time != pd.Timestamp('00:00:00').time()
+        # First filter out NaT values, then check for midnight times
+        valid_timestamps = fuel_df['timestamp'].dropna()
+        if len(valid_timestamps) == 0:
+            print("Warning: No valid timestamps found. Skipping time-based analysis.")
+            return violations
+            
+        timestamps_with_time = valid_timestamps.dt.time != pd.Timestamp('00:00:00').time()
         has_time_data = timestamps_with_time.any()
         
         if not has_time_data:
@@ -45,6 +51,11 @@ class FuelOnlyAnalyzer:
         
         for _, purchase in fuel_df.iterrows():
             timestamp = purchase['timestamp']
+            
+            # Skip if timestamp is NaT (failed to parse)
+            if pd.isna(timestamp):
+                continue
+                
             hour = timestamp.hour
             day_of_week = timestamp.weekday()  # 0 = Monday, 6 = Sunday
             
@@ -237,7 +248,13 @@ class FuelOnlyAnalyzer:
         violations = []
         
         # Check if timestamps have time information
-        timestamps_with_time = fuel_df['timestamp'].dt.time != pd.Timestamp('00:00:00').time()
+        # First filter out NaT values, then check for midnight times
+        valid_timestamps = fuel_df['timestamp'].dropna()
+        if len(valid_timestamps) == 0:
+            print("Warning: No valid timestamps found for rapid succession analysis.")
+            return violations
+            
+        timestamps_with_time = valid_timestamps.dt.time != pd.Timestamp('00:00:00').time()
         has_time_data = timestamps_with_time.any()
         
         if not has_time_data:
@@ -254,6 +271,10 @@ class FuelOnlyAnalyzer:
             for i in range(len(vehicle_data) - 1):
                 current = vehicle_data.iloc[i]
                 next_purchase = vehicle_data.iloc[i + 1]
+                
+                # Skip if either timestamp is NaT
+                if pd.isna(current['timestamp']) or pd.isna(next_purchase['timestamp']):
+                    continue
                 
                 time_diff = (next_purchase['timestamp'] - current['timestamp']).total_seconds() / 3600  # hours
                 

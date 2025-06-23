@@ -450,19 +450,29 @@ class FleetAuditor:
         all_dates = []
         
         if self.gps_data is not None and not self.gps_data.empty:
-            all_dates.extend(self.gps_data['timestamp'].tolist())
+            # Filter out None/NaT values before adding to list
+            valid_gps_dates = self.gps_data['timestamp'].dropna().tolist()
+            all_dates.extend(valid_gps_dates)
         
         if self.fuel_data is not None and not self.fuel_data.empty:
-            all_dates.extend(self.fuel_data['timestamp'].tolist())
+            # Filter out None/NaT values before adding to list
+            valid_fuel_dates = self.fuel_data['timestamp'].dropna().tolist()
+            all_dates.extend(valid_fuel_dates)
         
         if self.job_data is not None and not self.job_data.empty:
-            all_dates.extend(self.job_data['scheduled_time'].tolist())
+            # Filter out None/NaT values before adding to list
+            valid_job_dates = self.job_data['scheduled_time'].dropna().tolist()
+            all_dates.extend(valid_job_dates)
         
-        if not all_dates:
+        # Filter out any remaining None values (extra safety)
+        valid_dates = [dt for dt in all_dates if dt is not None and not pd.isna(dt)]
+        
+        if not valid_dates:
+            print("Warning: No valid dates found for audit period calculation, defaulting to 7 days")
             return 7  # Default to 1 week
         
-        min_date = min(all_dates)
-        max_date = max(all_dates)
+        min_date = min(valid_dates)
+        max_date = max(valid_dates)
         
         return max(1, (max_date - min_date).days + 1)
     
