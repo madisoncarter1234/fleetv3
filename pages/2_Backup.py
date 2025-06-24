@@ -629,12 +629,6 @@ def main():
     """Main app"""
     init_session_state()
     
-    # Simple sidebar navigation
-    with st.sidebar:
-        st.markdown("🏠 Landing Page")
-        st.markdown("🚛 App")  
-        st.markdown("**🔧 Backup**")
-    
     # Styled header
     st.markdown("""
     <div class="main-header">
