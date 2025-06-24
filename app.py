@@ -374,18 +374,20 @@ def display_demo_results(scenario_name, scenario_data):
                     st.write(f"**Estimated Loss:** ${violation['estimated_loss']:.2f}")
 
 def main():
-    # Clean sidebar navigation
+    # Clean sidebar navigation  
     with st.sidebar:
         st.markdown("### 🧭 Navigation")
         
-        # Current page
-        st.markdown("**🏠 Landing Page**")
+        page = st.selectbox(
+            "Go to:",
+            ["🏠 Landing Page", "🚛 App", "🔧 Backup"],
+            index=0,
+            label_visibility="collapsed"
+        )
         
-        # Clickable navigation
-        if st.button("🚛 App", key="nav_app", use_container_width=True):
+        if page == "🚛 App":
             st.switch_page("pages/1_Product.py")
-            
-        if st.button("🔧 Backup", key="nav_backup", use_container_width=True):
+        elif page == "🔧 Backup": 
             st.switch_page("pages/2_Backup.py")
     
     # Hero Section

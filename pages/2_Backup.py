@@ -636,14 +636,17 @@ def main():
     with st.sidebar:
         st.markdown("### 🧭 Navigation")
         
-        if st.button("🏠 Landing Page", key="nav_landing", use_container_width=True):
+        page = st.selectbox(
+            "Go to:",
+            ["🏠 Landing Page", "🚛 App", "🔧 Backup"],
+            index=2,
+            label_visibility="collapsed"
+        )
+        
+        if page == "🏠 Landing Page":
             st.switch_page("app.py")
-            
-        if st.button("🚛 App", key="nav_app", use_container_width=True):
+        elif page == "🚛 App":
             st.switch_page("pages/1_Product.py")
-            
-        # Current page
-        st.markdown("**🔧 Backup**")
     
     # Styled header
     st.markdown("""
