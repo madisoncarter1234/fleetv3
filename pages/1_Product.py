@@ -629,6 +629,21 @@ def main():
     """Main app"""
     init_session_state()
     
+    # Sidebar navigation
+    with st.sidebar:
+        st.markdown("## 🧭 Navigation")
+        st.markdown("**Current:** Product (Full Platform)")
+        st.markdown("---")
+        
+        if st.button("🏠 Back to Landing Page", use_container_width=True):
+            st.switch_page("app.py")
+            
+        if st.button("🔧 Backup Version", use_container_width=True):
+            st.switch_page("pages/2_Backup.py")
+            
+        st.markdown("---")
+        st.markdown("*This is the full fraud detection platform*")
+    
     # Styled header
     st.markdown("""
     <div class="main-header">

@@ -351,15 +351,21 @@ def display_demo_results(scenario_name, scenario_data):
                     st.write(f"**Estimated Loss:** ${violation['estimated_loss']:.2f}")
 
 def main():
-    # Sidebar navigation help
+    # Sidebar navigation 
     with st.sidebar:
         st.markdown("## 🧭 Navigation")
         st.markdown("**Current:** Landing Page")
-        st.markdown("**Available Pages:**")
-        st.markdown("- **Product** - Full fraud detection platform")
-        st.markdown("- **Backup** - Backup version")
         st.markdown("---")
-        st.markdown("*Click on page names above to navigate*")
+        
+        # Manual navigation buttons since auto-navigation isn't working
+        if st.button("🚛 Product (Full Platform)", use_container_width=True):
+            st.switch_page("pages/1_Product.py")
+            
+        if st.button("🔧 Backup Version", use_container_width=True):
+            st.switch_page("pages/2_Backup.py")
+            
+        st.markdown("---")
+        st.markdown("*Use buttons above to access full platform*")
     
     # Hero Section
     st.markdown("""
