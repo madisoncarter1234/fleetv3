@@ -636,11 +636,11 @@ def main():
     
     with col2:
         if st.button("Landing", key="nav_landing", use_container_width=True):
-            st.switch_page("app.py")
+            st.switch_page("app")
     
     with col3:
         if st.button("App", key="nav_app", use_container_width=True):
-            st.switch_page("pages/1_Product.py")
+            st.switch_page("1_Product")
     
     with col4:
         st.markdown("**Backup**")
