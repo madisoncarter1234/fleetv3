@@ -507,28 +507,32 @@ def main():
                         # Use the auditor we already initialized above
                         # (it already has the data loaded and overlap analysis done)
                         
-                        # Use AI violations if available, otherwise run manual audit
+                        # Use AI violations directly - simple and clean
                         if hasattr(st.session_state, 'ai_violations') and st.session_state.ai_violations:
-                            # Use pure AI results
+                            # AI found violations - use them
+                            violations = st.session_state.ai_violations
+                            total_loss = sum(v.get('estimated_loss', 50) for v in violations)
+                            
                             audit_results = {
-                                'consolidated_violations': st.session_state.ai_violations,
+                                'consolidated_violations': violations,
                                 'financial_summary': {
-                                    'total_fleet_loss': len(st.session_state.ai_violations) * 50,  # Estimate $50 per violation
-                                    'vehicles_flagged': len(set(v.get('vehicle_id') for v in st.session_state.ai_violations)),
-                                    'weekly_fleet_estimate': len(st.session_state.ai_violations) * 50 * 52 / 12  # Rough weekly estimate
+                                    'total_fleet_loss': total_loss,
+                                    'vehicles_flagged': len(set(v.get('vehicle_id') for v in violations)),
+                                    'weekly_fleet_estimate': total_loss * 52 / 12
                                 },
                                 'ai_summary': st.session_state.ai_summary
                             }
                         else:
-                            # Fallback to manual audit logic
-                            has_fuel = st.session_state.fuel_data is not None
-                            has_gps = st.session_state.gps_data is not None
-                            
-                            audit_results = auditor.run_full_audit(
-                                enable_fuel_only_analysis=has_fuel and not has_gps,
-                                enable_enhanced_fuel_detection=has_fuel,
-                                enable_mpg_analysis=has_fuel and has_gps
-                            )
+                            # No AI violations found
+                            audit_results = {
+                                'consolidated_violations': [],
+                                'financial_summary': {
+                                    'total_fleet_loss': 0,
+                                    'vehicles_flagged': 0,
+                                    'weekly_fleet_estimate': 0
+                                },
+                                'ai_summary': st.session_state.get('ai_summary', {})
+                            }
                         
                         # Skip AI violation insights - keep it lightweight and fast
                         # AI is only used for CSV parsing, violations are detected by fast logic
@@ -808,15 +812,19 @@ def _display_violation_card(violation):
     else:
         color = "#ffaa00"
     
+    # Format violation display for AI results
+    driver_name = violation.get('driver_name', 'Unknown Driver')
+    violation_type = violation.get('type', 'Unknown').replace('_', ' ').title()
+    
     st.markdown(f"""
     <div style="border-left: 4px solid {color}; padding: 1rem; margin: 0.5rem 0; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-        <h4 style="margin: 0 0 0.5rem 0;">{violation['vehicle_id']} - {str(violation.get('detection_method', 'Unknown')).replace('_', ' ').title()}</h4>
-        <p style="margin: 0 0 0.5rem 0;"><strong>Time:</strong> {violation['timestamp']}</p>
+        <h4 style="margin: 0 0 0.5rem 0;">{violation['vehicle_id']} - {driver_name} - {violation_type}</h4>
+        <p style="margin: 0 0 0.5rem 0;"><strong>Time:</strong> {violation.get('timestamp', 'Unknown')}</p>
         <p style="margin: 0 0 0.5rem 0;"><strong>Location:</strong> {violation.get('location', 'Unknown')}</p>
         <p style="margin: 0 0 1rem 0;">{violation.get('description', 'No description available')}</p>
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <span><strong>Confidence:</strong> {confidence:.0f}%</span>
-            <span><strong>Estimated Loss:</strong> ${violation.get('total_estimated_loss', 0):.2f}</span>
+            <span><strong>Estimated Loss:</strong> ${violation.get('estimated_loss', 0):.2f}</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
