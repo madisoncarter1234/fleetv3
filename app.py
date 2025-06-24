@@ -23,10 +23,140 @@ except ImportError:
 
 # Page config
 st.set_page_config(
-    page_title="FleetAudit.io - Clean Version",
+    page_title="FleetAudit.io - Fleet Fraud Detection",
     page_icon="🚛",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
+
+# Custom CSS for better styling
+st.markdown("""
+<style>
+    /* Main theme colors */
+    .main {
+        padding-top: 2rem;
+    }
+    
+    /* Header styling */
+    .main-header {
+        background: linear-gradient(90deg, #1f4e79 0%, #2d5aa0 100%);
+        padding: 2rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        text-align: center;
+        color: white;
+    }
+    
+    .main-header h1 {
+        color: white !important;
+        margin-bottom: 0.5rem;
+        font-size: 2.5rem;
+        font-weight: 700;
+    }
+    
+    .main-header p {
+        color: #e8f4f8 !important;
+        font-size: 1.2rem;
+        margin-bottom: 0;
+    }
+    
+    /* Upload section styling */
+    .upload-section {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+        margin-bottom: 1rem;
+    }
+    
+    /* Violation card styling */
+    .violation-card {
+        background: #fff5f5;
+        border: 1px solid #fed7d7;
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 0.5rem 0;
+        border-left: 4px solid #e53e3e;
+    }
+    
+    .violation-card.high {
+        border-left-color: #e53e3e;
+        background: #fff5f5;
+    }
+    
+    .violation-card.medium {
+        border-left-color: #dd6b20;
+        background: #fffbf0;
+    }
+    
+    .violation-card.low {
+        border-left-color: #ecc94b;
+        background: #fffff0;
+    }
+    
+    /* Success styling */
+    .success-card {
+        background: #f0fff4;
+        border: 1px solid #c6f6d5;
+        border-radius: 8px;
+        padding: 1.5rem;
+        text-align: center;
+        border-left: 4px solid #38a169;
+    }
+    
+    /* Button styling */
+    .stButton > button {
+        background: linear-gradient(90deg, #1f4e79 0%, #2d5aa0 100%);
+        color: white;
+        border-radius: 6px;
+        border: none;
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(31, 78, 121, 0.3);
+    }
+    
+    /* Metric styling */
+    [data-testid="metric-container"] {
+        background: white;
+        border: 1px solid #e9ecef;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    /* Upload widget styling */
+    .uploadedFile {
+        border: 2px dashed #2d5aa0;
+        border-radius: 8px;
+        padding: 1rem;
+        background: #f8f9fa;
+    }
+    
+    /* Divider styling */
+    hr {
+        margin: 2rem 0;
+        border: none;
+        height: 2px;
+        background: linear-gradient(90deg, transparent 0%, #2d5aa0 50%, transparent 100%);
+    }
+    
+    /* Expander styling */
+    .streamlit-expanderHeader {
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+    
+    /* Remove Streamlit branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    .stDeployButton {display:none;}
+</style>
+""", unsafe_allow_html=True)
 
 def init_session_state():
     """Initialize session state"""
@@ -41,14 +171,14 @@ def init_session_state():
 
 def upload_fuel_data():
     """Simple pandas-based fuel data upload"""
-    st.subheader("⛽ Fuel Data Upload")
-    
-    fuel_file = st.file_uploader(
-        "Upload Fuel CSV", 
-        type=['csv'], 
-        key="fuel_upload",
-        help="Upload fuel card transaction data"
-    )
+    st.markdown("### ⛽ Fuel Data Upload")
+    with st.container():
+        fuel_file = st.file_uploader(
+            "Upload Fuel CSV", 
+            type=['csv'], 
+            key="fuel_upload",
+            help="Upload fuel card transaction data"
+        )
     
     if fuel_file is not None:
         try:
@@ -115,14 +245,14 @@ def upload_fuel_data():
 
 def upload_gps_data():
     """Simple pandas-based GPS data upload"""
-    st.subheader("🗺️ GPS Data Upload")
-    
-    gps_file = st.file_uploader(
-        "Upload GPS CSV", 
-        type=['csv'], 
-        key="gps_upload",
-        help="Upload GPS tracking data"
-    )
+    st.markdown("### 🗺️ GPS Data Upload")
+    with st.container():
+        gps_file = st.file_uploader(
+            "Upload GPS CSV", 
+            type=['csv'], 
+            key="gps_upload",
+            help="Upload GPS tracking data"
+        )
     
     if gps_file is not None:
         try:
@@ -146,14 +276,14 @@ def upload_gps_data():
 
 def upload_job_data():
     """Simple pandas-based job data upload"""
-    st.subheader("📋 Job Data Upload") 
-    
-    job_file = st.file_uploader(
-        "Upload Job CSV", 
-        type=['csv'], 
-        key="job_upload",
-        help="Upload job scheduling data"
-    )
+    st.markdown("### 📋 Job Data Upload")
+    with st.container():
+        job_file = st.file_uploader(
+            "Upload Job CSV", 
+            type=['csv'], 
+            key="job_upload",
+            help="Upload job scheduling data"
+        )
     
     if job_file is not None:
         try:
@@ -177,7 +307,9 @@ def upload_job_data():
 
 def detect_fraud():
     """Claude Haiku-only fraud detection"""
-    st.subheader("🚨 Fraud Detection")
+    st.markdown("### 🚨 Fraud Detection")
+    st.markdown("Upload your fleet data above, then click the button below to analyze for potential fraud and policy violations.")
+    st.markdown("---")
     
     if st.session_state.fuel_data is None:
         st.warning("⚠️ Please upload fuel data first")
@@ -301,10 +433,18 @@ Return JSON:
                     summary = fraud_results.get('summary', {})
                     
                     if violations:
-                        st.error(f"🚨 **{len(violations)} fraud incidents detected!**")
+                        # Summary cards
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric("🚨 Violations Found", len(violations), delta=f"{len(violations)} issues")
+                        with col2:
+                            total_loss = summary.get('total_estimated_loss', 0)
+                            st.metric("💰 Estimated Loss", f"${total_loss:.2f}", delta=f"-${total_loss:.2f}")
+                        with col3:
+                            high_risk = len([v for v in violations if v.get('severity') == 'high'])
+                            st.metric("⚠️ High Risk", high_risk, delta=f"{high_risk} critical")
                         
-                        if summary.get('total_estimated_loss'):
-                            st.error(f"💰 **Estimated loss: ${summary['total_estimated_loss']:.2f}**")
+                        st.markdown("---")
                         
                         # Show violations
                         for i, violation in enumerate(violations):
@@ -343,7 +483,13 @@ Return JSON:
                                     if violation.get('estimated_loss'):
                                         st.write(f"**Estimated Loss:** ${violation['estimated_loss']:.2f}")
                     else:
-                        st.success("🎉 No fraud detected in your fleet data!")
+                        st.markdown("""
+                        <div class="success-card">
+                            <h3>🎉 Clean Fleet Audit Results</h3>
+                            <p>No fraud or policy violations detected in your fleet data!</p>
+                            <p><em>Your fleet operations appear to be following proper procedures.</em></p>
+                        </div>
+                        """, unsafe_allow_html=True)
                         
                 else:
                     st.error("❌ Failed to get valid response from AI")
@@ -444,7 +590,8 @@ def generate_pdf_report():
 
 def export_reports():
     """Export and email reports section"""
-    st.subheader("📄 Export Reports")
+    st.markdown("### 📄 Export Reports")
+    st.markdown("Generate professional reports for management and compliance purposes.")
     
     col1, col2 = st.columns(2)
     
@@ -483,12 +630,19 @@ def main():
     """Main app"""
     init_session_state()
     
-    # Header
-    st.title("🚛 FleetAudit.io - Clean Version")
-    st.write("**Simple, AI-powered fleet fraud detection**")
+    # Styled header
+    st.markdown("""
+    <div class="main-header">
+        <h1>🚛 FleetAudit.io</h1>
+        <p>AI-Powered Fleet Fraud Detection & Audit Platform</p>
+    </div>
+    """, unsafe_allow_html=True)
     
     # Upload section
-    col1, col2, col3 = st.columns(3)
+    st.markdown("## 📁 Data Upload")
+    st.markdown("Upload your fleet data files to begin fraud detection analysis.")
+    
+    col1, col2, col3 = st.columns(3, gap="medium")
     
     with col1:
         upload_fuel_data()
@@ -499,7 +653,7 @@ def main():
     with col3:
         upload_job_data()
     
-    st.divider()
+    st.markdown("---")
     
     # Fraud detection
     detect_fraud()
@@ -510,8 +664,9 @@ def main():
         export_reports()
     
     # Show current data status
-    st.divider()
-    st.subheader("📊 Data Status")
+    st.markdown("---")
+    st.markdown("### 📊 Data Status")
+    st.markdown("Overview of uploaded data and system readiness.")
     
     col1, col2, col3 = st.columns(3)
     
