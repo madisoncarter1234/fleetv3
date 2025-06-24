@@ -214,13 +214,28 @@ Return JSON:
                 # Parse response
                 result_text = response.content[0].text.strip()
                 
-                # Extract JSON
+                # Extract JSON more carefully
+                import json
+                
                 if '{' in result_text:
                     json_start = result_text.find('{')
-                    json_text = result_text[json_start:]
+                    # Find the end of the JSON by counting braces
+                    brace_count = 0
+                    json_end = json_start
                     
-                    import json
+                    for i, char in enumerate(result_text[json_start:], json_start):
+                        if char == '{':
+                            brace_count += 1
+                        elif char == '}':
+                            brace_count -= 1
+                            if brace_count == 0:
+                                json_end = i + 1
+                                break
+                    
+                    json_text = result_text[json_start:json_end]
                     fraud_results = json.loads(json_text)
+                else:
+                    raise ValueError("No JSON found in response")
                     
                     st.session_state.fraud_results = fraud_results
                     
