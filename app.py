@@ -70,7 +70,12 @@ def upload_fuel_data():
                 'Vehicle': 'vehicle_id',
                 'Amount': 'amount',
                 'Total Cost': 'amount',
-                'Driver Name': 'driver_name'
+                'Driver Name': 'driver_name',
+                'Card Number': 'card_number',
+                'Card': 'card_number',
+                'Fuel Card': 'card_number',
+                'Card Last 4': 'card_last_4',
+                'Last 4': 'card_last_4'
             }
             
             # Rename columns
@@ -87,12 +92,28 @@ def upload_fuel_data():
             elif 'date' in fuel_df.columns:
                 fuel_df['timestamp'] = pd.to_datetime(fuel_df['date'], errors='coerce')
             
+            # Extract last 4 digits from card number if we have full card number
+            if 'card_number' in fuel_df.columns and 'card_last_4' not in fuel_df.columns:
+                fuel_df['card_last_4'] = fuel_df['card_number'].astype(str).str[-4:]
+            elif 'card_last_4' not in fuel_df.columns and 'card_number' not in fuel_df.columns:
+                # Try to find any column that might contain card info
+                card_columns = [col for col in fuel_df.columns if 'card' in col.lower() or 'last' in col.lower()]
+                if card_columns:
+                    fuel_df['card_last_4'] = fuel_df[card_columns[0]].astype(str).str[-4:]
+            
             st.session_state.fuel_data = fuel_df
             st.success(f"✅ Fuel data loaded: {len(fuel_df)} records")
             
             # Show preview
             st.write("**Preview:**")
             st.dataframe(fuel_df.head(), use_container_width=True)
+            
+            # Show available columns for debugging
+            st.write("**Available columns:**", list(fuel_df.columns))
+            if 'card_last_4' in fuel_df.columns:
+                unique_cards = fuel_df['card_last_4'].unique()
+                st.write(f"**Cards detected:** {len(unique_cards)} unique cards")
+                st.write(f"**Card sample:** {list(unique_cards)[:5]}")
             
         except Exception as e:
             st.error(f"❌ Error loading fuel data: {str(e)}")
@@ -201,6 +222,12 @@ Find these fraud types:
 - Personal use patterns (weekend/holiday activity)
 - Jobs with no vehicle presence (cross-check GPS and fuel data)
 - SHARED CARD USE: Same card number (last 4 digits) used by different drivers/vehicles within 60 minutes
+
+CRITICAL SHARED CARD DETECTION:
+1. Look for identical card numbers or last 4 digits used across different vehicles within 60 minutes
+2. Flag even same-vehicle multiple uses within 60 minutes as suspicious
+3. Include ALL transactions in the shared_card_use violation with exact timestamps
+4. Calculate time_span_minutes between first and last use
 
 IMPORTANT: For ALL fuel-related violations, include the "card_last_4" field with the last 4 digits of the fuel card used.
 
