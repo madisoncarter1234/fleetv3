@@ -636,10 +636,10 @@ def main():
         st.markdown("---")
         
         if st.button("🏠 Back to Landing Page", use_container_width=True):
-            st.switch_page("app.py")
+            st.switch_page("app")
             
         if st.button("🔧 Backup Version", use_container_width=True):
-            st.switch_page("pages/2_Backup.py")
+            st.switch_page("2_Backup")
             
         st.markdown("---")
         st.markdown("*This is the full fraud detection platform*")
