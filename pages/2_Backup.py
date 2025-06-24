@@ -633,10 +633,10 @@ def main():
         st.markdown("### Navigation")
         
         if st.button("🏠 Go to Landing", key="nav_to_landing"):
-            st.switch_page("app.py")
+            st.switch_page("app")
             
         if st.button("🚛 Go to App", key="nav_to_app"):
-            st.switch_page("pages/1_Product.py")
+            st.switch_page("1_Product")
             
         st.markdown("**🔧 Backup** ← You are here")
     

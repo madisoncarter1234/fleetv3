@@ -633,12 +633,12 @@ def main():
         st.markdown("### Navigation")
         
         if st.button("🏠 Go to Landing", key="nav_to_landing"):
-            st.switch_page("app.py")
+            st.switch_page("app")
             
         st.markdown("**🚛 App** ← You are here")
         
         if st.button("🔧 Go to Backup", key="nav_to_backup"):
-            st.switch_page("pages/2_Backup.py")
+            st.switch_page("2_Backup")
     
     # Styled header
     st.markdown("""

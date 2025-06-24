@@ -377,10 +377,10 @@ def main():
         
         # Simple form-based navigation that should work in deployed environments
         if st.button("🚛 Go to App", key="nav_to_app"):
-            st.switch_page("pages/1_Product.py")
+            st.switch_page("1_Product")
             
         if st.button("🔧 Go to Backup", key="nav_to_backup"):
-            st.switch_page("pages/2_Backup.py")
+            st.switch_page("2_Backup")
     
     # Hero Section
     st.markdown("""
