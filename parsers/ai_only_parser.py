@@ -43,40 +43,27 @@ class AIOnlyParser:
         fuel_csv_lines = fuel_csv_content.split('\n')
         print(f"Processing fuel file with {len(fuel_csv_lines)} rows")
         
-        # Build ultra-optimized prompt for Haiku
-        prompt = f"""Parse fuel CSV, find violations.
+        # Two-stage approach: Parse first, then detect violations
+        prompt = f"""Parse this fuel CSV into standardized format. Return ONLY valid JSON.
 
 CSV:
 {fuel_csv_content}
 
-Find: theft, after-hours, overfills, rapid refills, personal use.
-Return JSON: {{"parsed_data":[ALL_ROWS], "violations":[VIOLATIONS]}}"""
+Return this exact format:
+{{
+  "parsed_data": [
+    {{"timestamp": "YYYY-MM-DD HH:MM:SS", "location": "station", "gallons": 25.5, "vehicle_id": "TRUCK001", "amount": 75.25}}
+  ]
+}}
+
+Include ALL rows. No text outside JSON."""
         
-        # Add RAW GPS data if provided
+        # Skip GPS/job for now - focus on just getting fuel parsing to work
+        # TODO: Add violation detection in separate step
         if gps_file_path:
-            try:
-                with open(gps_file_path, 'r') as f:
-                    gps_csv_content = f.read()
-                    
-                gps_lines = gps_csv_content.split('\n')
-                print(f"Including GPS data with {len(gps_lines)} rows")
-                
-                prompt += f"\n\nGPS:\n{gps_csv_content}\nCheck: truck at station?"
-            except Exception as e:
-                print(f"Could not read GPS file: {e}")
-        
-        # Add RAW job data if provided
+            print(f"GPS file available for future violation detection")
         if job_file_path:
-            try:
-                with open(job_file_path, 'r') as f:
-                    job_csv_content = f.read()
-                    
-                job_lines = job_csv_content.split('\n')
-                print(f"Including job data with {len(job_lines)} rows")
-                    
-                prompt += f"\n\nJOBS:\n{job_csv_content}\nCheck: fuel near work?"
-            except Exception as e:
-                print(f"Could not read job file: {e}")
+            print(f"Job file available for future violation detection")
         
         
         # HAIKU ONLY - no expensive Sonnet fallback
@@ -95,22 +82,39 @@ Return JSON: {{"parsed_data":[ALL_ROWS], "violations":[VIOLATIONS]}}"""
             result = self._parse_ai_response(result_text)
             
             # Return Haiku result - always create DataFrame for app compatibility
-            if result:
-                print(f"✅ Haiku completed! Found {len(result.get('parsed_data', []))} transactions")
-                # Ensure we always have a dataframe for app.py compatibility
-                if result.get('parsed_data'):
-                    df = pd.DataFrame(result['parsed_data'])
-                    print(f"DataFrame created with columns: {list(df.columns)}")
-                    if 'timestamp' in df.columns:
-                        df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
-                    result['dataframe'] = df
-                else:
-                    print("⚠️ No parsed_data in AI result")
-                    result['dataframe'] = pd.DataFrame()
-                    result['parsed_data'] = []
+            if result and result.get('parsed_data'):
+                transactions = result['parsed_data']
+                print(f"✅ Haiku completed! Found {len(transactions)} transactions")
+                
+                # Create DataFrame
+                df = pd.DataFrame(transactions)
+                print(f"DataFrame created with columns: {list(df.columns)}")
+                
+                # Standardize column names
+                if 'timestamp' in df.columns:
+                    df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
+                elif 'datetime' in df.columns:
+                    df['timestamp'] = pd.to_datetime(df['datetime'], errors='coerce')
+                    
+                # Ensure required columns exist
+                required_cols = ['timestamp', 'location', 'gallons', 'vehicle_id']
+                for col in required_cols:
+                    if col not in df.columns:
+                        # Map from common alternatives
+                        if col == 'location' and 'station' in df.columns:
+                            df['location'] = df['station']
+                        elif col == 'gallons' and 'volume' in df.columns:
+                            df['gallons'] = df['volume']
+                        else:
+                            df[col] = None
+                
+                result['dataframe'] = df
+                # Add empty violations for now (TODO: implement violation detection)
+                result['violations'] = []
+                result['summary'] = {"total_transactions": len(df), "violations_found": 0}
                 return result
             else:
-                print("⚠️ Haiku returned invalid JSON - creating empty result")
+                print("⚠️ Haiku returned invalid result")
                 return {
                     "parsed_data": [],
                     "dataframe": pd.DataFrame(),
@@ -137,13 +141,18 @@ Return JSON: {{"parsed_data":[ALL_ROWS], "violations":[VIOLATIONS]}}"""
     def _parse_ai_response(self, result_text: str) -> Dict:
         """Parse AI response and convert to usable format"""
         try:
-            # Extract JSON
+            # Extract JSON - handle text before JSON
             if '```json' in result_text:
                 json_text = result_text.split('```json')[1].split('```')[0]
                 print(f"🔍 Extracted JSON from ```json blocks")
             elif '```' in result_text:
                 json_text = result_text.split('```')[1].split('```')[0]
                 print(f"🔍 Extracted JSON from ``` blocks")
+            elif '{' in result_text:
+                # Find the first { and take everything from there
+                start_pos = result_text.find('{')
+                json_text = result_text[start_pos:]
+                print(f"🔍 Extracted JSON starting from first {{ bracket")
             else:
                 json_text = result_text
                 print(f"🔍 Using raw response as JSON")
