@@ -634,19 +634,9 @@ def main():
     
     # Clean sidebar navigation
     with st.sidebar:
-        st.markdown("### 🧭 Navigation")
-        
-        page = st.selectbox(
-            "Go to:",
-            ["🏠 Landing Page", "🚛 App", "🔧 Backup"],
-            index=2,
-            label_visibility="collapsed"
-        )
-        
-        if page == "🏠 Landing Page":
-            st.switch_page("app.py")
-        elif page == "🚛 App":
-            st.switch_page("pages/1_Product.py")
+        st.page_link("app.py", label="🏠 Landing Page")
+        st.page_link("pages/1_Product.py", label="🚛 App")
+        st.markdown("🔧 **Backup**)
     
     # Styled header
     st.markdown("""
