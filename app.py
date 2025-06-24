@@ -449,7 +449,10 @@ def main():
                 st.success("🎉 Ready to start your free trial! Subscription system coming soon.")
         with col2:
             st.markdown("**Already a subscriber?**")
-            st.markdown("Access the full platform via the sidebar navigation")
+            # Add manual access until auto-navigation works
+            if st.button("Access Product Page", type="secondary"):
+                st.info("📋 Navigate to 'Product' in the sidebar (hamburger menu ☰) to access the full platform")
+            st.markdown("*Or use the sidebar navigation*")
     
     # Call to Action
     st.markdown("---")

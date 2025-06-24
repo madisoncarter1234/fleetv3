@@ -698,5 +698,5 @@ def main():
         else:
             st.metric("Job Records", "Not loaded")
 
-if __name__ == "__main__":
-    main()
+# Run the main function for multipage apps
+main()
