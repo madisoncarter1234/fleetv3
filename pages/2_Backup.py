@@ -628,6 +628,18 @@ def main():
     """Main app"""
     init_session_state()
     
+    # Simple working navigation for deployed version
+    with st.sidebar:
+        st.markdown("### Navigation")
+        
+        if st.button("🏠 Go to Landing", key="nav_to_landing"):
+            st.switch_page("app.py")
+            
+        if st.button("🚛 Go to App", key="nav_to_app"):
+            st.switch_page("pages/1_Product.py")
+            
+        st.markdown("**🔧 Backup** ← You are here")
+    
     # Styled header
     st.markdown("""
     <div class="main-header">

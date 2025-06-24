@@ -370,6 +370,17 @@ def display_demo_results(scenario_name, scenario_data):
                     st.write(f"**Estimated Loss:** ${violation['estimated_loss']:.2f}")
 
 def main():
+    # Simple working navigation for deployed version
+    with st.sidebar:
+        st.markdown("### Navigation")
+        st.markdown("**🏠 Landing Page** ← You are here")
+        
+        # Simple form-based navigation that should work in deployed environments
+        if st.button("🚛 Go to App", key="nav_to_app"):
+            st.switch_page("pages/1_Product.py")
+            
+        if st.button("🔧 Go to Backup", key="nav_to_backup"):
+            st.switch_page("pages/2_Backup.py")
     
     # Hero Section
     st.markdown("""
