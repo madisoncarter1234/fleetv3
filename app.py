@@ -9,7 +9,7 @@ st.set_page_config(
     page_title="FleetAudit.io - Fleet Fraud Detection",
     page_icon="🚛",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # Custom CSS for landing page styling
@@ -351,18 +351,6 @@ def display_demo_results(scenario_name, scenario_data):
                     st.write(f"**Estimated Loss:** ${violation['estimated_loss']:.2f}")
 
 def main():
-    # Sidebar navigation 
-    with st.sidebar:
-        st.markdown("## 🧭 Navigation")
-        st.markdown("**Current:** Landing Page")
-        st.markdown("---")
-        
-        # Simple navigation message - removing problematic buttons for now
-        st.markdown("**Available Pages:**")
-        st.markdown("👆 Check the top of this sidebar for automatic page navigation")
-        st.markdown("---")
-        st.markdown("*Streamlit should show page links above*")
-    
     # Hero Section
     st.markdown("""
     <div class="hero-section">
@@ -461,7 +449,7 @@ def main():
                 st.success("🎉 Ready to start your free trial! Subscription system coming soon.")
         with col2:
             st.markdown("**Already a subscriber?**")
-            st.markdown("👈 Use the sidebar to access the **Product** page")
+            st.markdown("Access the full platform via the sidebar navigation")
     
     # Call to Action
     st.markdown("---")
