@@ -4,15 +4,22 @@ import tempfile
 import os
 from datetime import datetime
 from anthropic import Anthropic
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib import colors
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.base import MIMEBase
-from email import encoders
+# Optional PDF generation imports
+try:
+    from reportlab.lib.pagesizes import letter
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib import colors
+    REPORTLAB_AVAILABLE = True
+except ImportError:
+    REPORTLAB_AVAILABLE = False
+    # Create dummy classes to prevent errors
+    letter = None
+    SimpleDocTemplate = None
+    Paragraph = None
+    Spacer = None
+    Table = None
+    TableStyle = None
 
 # Page config
 st.set_page_config(
@@ -214,10 +221,10 @@ Return JSON:
   }}
 }}"""
                 
-                # Call Claude Haiku
+                # Call Claude Haiku with correct token limit
                 response = client.messages.create(
                     model="claude-3-haiku-20240307",
-                    max_tokens=4000,
+                    max_tokens=4000,  # Haiku max is 4096
                     temperature=0.1,
                     messages=[{"role": "user", "content": prompt}]
                 )
@@ -282,6 +289,9 @@ Return JSON:
 def generate_pdf_report():
     """Generate PDF report of fraud findings"""
     if not st.session_state.fraud_results:
+        return None
+        
+    if not REPORTLAB_AVAILABLE:
         return None
         
     # Create temporary file
@@ -355,25 +365,28 @@ def export_reports():
     
     with col1:
         if st.button("📥 Download PDF Report", use_container_width=True):
-            with st.spinner("Generating PDF report..."):
-                try:
-                    pdf_path = generate_pdf_report()
-                    
-                    if pdf_path:
-                        with open(pdf_path, "rb") as pdf_file:
-                            st.download_button(
-                                label="📥 Download Report",
-                                data=pdf_file.read(),
-                                file_name=f"fraud_report_{datetime.now().strftime('%Y%m%d')}.pdf",
-                                mime="application/pdf",
-                                use_container_width=True
-                            )
+            if not REPORTLAB_AVAILABLE:
+                st.error("📄 PDF generation requires reportlab. Install it to enable PDF exports.")
+            else:
+                with st.spinner("Generating PDF report..."):
+                    try:
+                        pdf_path = generate_pdf_report()
                         
-                        # Clean up temp file
-                        os.unlink(pdf_path)
-                        
-                except Exception as e:
-                    st.error(f"PDF generation failed: {str(e)}")
+                        if pdf_path:
+                            with open(pdf_path, "rb") as pdf_file:
+                                st.download_button(
+                                    label="📥 Download Report",
+                                    data=pdf_file.read(),
+                                    file_name=f"fraud_report_{datetime.now().strftime('%Y%m%d')}.pdf",
+                                    mime="application/pdf",
+                                    use_container_width=True
+                                )
+                            
+                            # Clean up temp file
+                            os.unlink(pdf_path)
+                            
+                    except Exception as e:
+                        st.error(f"PDF generation failed: {str(e)}")
     
     with col2:
         recipient_email = st.text_input("📧 Email Report To:", placeholder="manager@company.com")
