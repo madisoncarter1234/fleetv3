@@ -357,12 +357,11 @@ def main():
         st.markdown("**Current:** Landing Page")
         st.markdown("---")
         
-        # Navigation links 
-        st.page_link("pages/1_Product.py", label="🚛 Product (Full Platform)", use_container_width=True)
-        st.page_link("pages/2_Backup.py", label="🔧 Backup Version", use_container_width=True)
-            
+        # Simple navigation message - removing problematic buttons for now
+        st.markdown("**Available Pages:**")
+        st.markdown("👆 Check the top of this sidebar for automatic page navigation")
         st.markdown("---")
-        st.markdown("*Use buttons above to access full platform*")
+        st.markdown("*Streamlit should show page links above*")
     
     # Hero Section
     st.markdown("""

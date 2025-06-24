@@ -635,9 +635,8 @@ def main():
         st.markdown("**Current:** Product (Full Platform)")
         st.markdown("---")
         
-        st.page_link("app.py", label="🏠 Back to Landing Page", use_container_width=True)
-        st.page_link("pages/2_Backup.py", label="🔧 Backup Version", use_container_width=True)
-            
+        st.markdown("**Available Pages:**")
+        st.markdown("👆 Check the top of this sidebar for automatic page navigation")
         st.markdown("---")
         st.markdown("*This is the full fraud detection platform*")
     
