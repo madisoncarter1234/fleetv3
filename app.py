@@ -193,12 +193,16 @@ def detect_fraud():
 {analysis_data}
 
 Find these fraud types:
-- After-hours fuel purchases
-- Ghost jobs (jobs in schedule but no GPS activity at location)
+- After-hours fuel purchases (outside 7AM-6PM)
+- Ghost jobs (jobs scheduled but no GPS/fuel activity at location)
 - Fuel without GPS at location  
-- Excessive fuel amounts
-- Rapid consecutive purchases
-- Personal use patterns
+- Excessive fuel amounts (>25 gallons for vans, >50 for trucks)
+- Rapid consecutive purchases (multiple fills within 2 hours)
+- Personal use patterns (weekend/holiday activity)
+- Jobs with no vehicle presence (cross-check GPS and fuel data)
+- SHARED CARD USE: Same card number (last 4 digits) used by different drivers/vehicles within 60 minutes
+
+IMPORTANT: For ALL fuel-related violations, include the "card_last_4" field with the last 4 digits of the fuel card used.
 
 Return JSON:
 {{
@@ -209,9 +213,24 @@ Return JSON:
       "driver_name": "Diana",
       "timestamp": "2024-06-16 02:00:00",
       "location": "Shell Station",
+      "card_last_4": "5678",
       "description": "Fuel purchase at 2 AM outside business hours",
       "severity": "high",
       "estimated_loss": 75.50
+    }},
+    {{
+      "type": "shared_card_use",
+      "card_last_4": "1234",
+      "vehicles_involved": ["VAN-001", "TRUCK-002"],
+      "drivers_involved": ["John Smith", "Mike Jones"],
+      "transactions": [
+        {{"timestamp": "2024-06-16 14:15:00", "vehicle_id": "VAN-001", "driver_name": "John Smith", "location": "BP Station"}},
+        {{"timestamp": "2024-06-16 14:45:00", "vehicle_id": "TRUCK-002", "driver_name": "Mike Jones", "location": "Shell Station"}}
+      ],
+      "time_span_minutes": 30,
+      "description": "Same fuel card (****1234) used by different drivers within 30 minutes",
+      "severity": "high",
+      "estimated_loss": 150.00
     }}
   ],
   "summary": {{
@@ -267,16 +286,40 @@ Return JSON:
                         
                         # Show violations
                         for i, violation in enumerate(violations):
-                            driver_info = f"{violation.get('driver_name', 'Unknown Driver')} ({violation.get('vehicle_id', 'Unknown Vehicle')})"
-                            with st.expander(f"**{violation.get('type', 'Unknown').replace('_', ' ').title()}** - {driver_info}"):
-                                st.write(f"**Driver:** {violation.get('driver_name', 'Unknown')}")
-                                st.write(f"**Vehicle:** {violation.get('vehicle_id', 'Unknown')}")
-                                st.write(f"**Time:** {violation.get('timestamp', 'Unknown')}")
-                                st.write(f"**Location:** {violation.get('location', 'Unknown')}")
-                                st.write(f"**Description:** {violation.get('description', 'No description')}")
-                                st.write(f"**Severity:** {violation.get('severity', 'Unknown').upper()}")
-                                if violation.get('estimated_loss'):
-                                    st.write(f"**Estimated Loss:** ${violation['estimated_loss']:.2f}")
+                            # Handle shared card use violations differently
+                            if violation.get('type') == 'shared_card_use':
+                                card_info = f"Card ****{violation.get('card_last_4', 'Unknown')}"
+                                vehicles = ', '.join(violation.get('vehicles_involved', []))
+                                with st.expander(f"🚨 **Shared Card Use** - {card_info} ({vehicles})"):
+                                    st.write(f"**Card Last 4:** ****{violation.get('card_last_4', 'Unknown')}")
+                                    st.write(f"**Vehicles Involved:** {', '.join(violation.get('vehicles_involved', []))}")
+                                    st.write(f"**Drivers Involved:** {', '.join(violation.get('drivers_involved', []))}")
+                                    st.write(f"**Time Span:** {violation.get('time_span_minutes', 'Unknown')} minutes")
+                                    
+                                    # Show transaction details
+                                    st.write("**Transactions:**")
+                                    for tx in violation.get('transactions', []):
+                                        st.write(f"  • {tx.get('timestamp', 'Unknown')} - {tx.get('driver_name', 'Unknown')} in {tx.get('vehicle_id', 'Unknown')} at {tx.get('location', 'Unknown')}")
+                                    
+                                    st.write(f"**Description:** {violation.get('description', 'No description')}")
+                                    st.write(f"**Severity:** {violation.get('severity', 'Unknown').upper()}")
+                                    if violation.get('estimated_loss'):
+                                        st.write(f"**Estimated Loss:** ${violation['estimated_loss']:.2f}")
+                            else:
+                                # Handle regular violations
+                                driver_info = f"{violation.get('driver_name', 'Unknown Driver')} ({violation.get('vehicle_id', 'Unknown Vehicle')})"
+                                with st.expander(f"**{violation.get('type', 'Unknown').replace('_', ' ').title()}** - {driver_info}"):
+                                    st.write(f"**Driver:** {violation.get('driver_name', 'Unknown')}")
+                                    st.write(f"**Vehicle:** {violation.get('vehicle_id', 'Unknown')}")
+                                    st.write(f"**Time:** {violation.get('timestamp', 'Unknown')}")
+                                    st.write(f"**Location:** {violation.get('location', 'Unknown')}")
+                                    # Show card last 4 for fuel-related violations
+                                    if violation.get('card_last_4'):
+                                        st.write(f"**Card Used:** ****{violation['card_last_4']}")
+                                    st.write(f"**Description:** {violation.get('description', 'No description')}")
+                                    st.write(f"**Severity:** {violation.get('severity', 'Unknown').upper()}")
+                                    if violation.get('estimated_loss'):
+                                        st.write(f"**Estimated Loss:** ${violation['estimated_loss']:.2f}")
                     else:
                         st.success("🎉 No fraud detected in your fleet data!")
                         
@@ -326,17 +369,37 @@ def generate_pdf_report():
         story.append(Spacer(1, 10))
         
         # Table data
-        table_data = [['Type', 'Driver', 'Vehicle', 'Time', 'Location', 'Loss']]
+        table_data = [['Type', 'Driver', 'Vehicle', 'Time', 'Location', 'Card', 'Loss']]
         
         for violation in violations:
-            table_data.append([
-                violation.get('type', '').replace('_', ' ').title(),
-                violation.get('driver_name', 'Unknown'),
-                violation.get('vehicle_id', 'Unknown'),
-                violation.get('timestamp', 'Unknown'),
-                violation.get('location', 'Unknown'),
-                f"${violation.get('estimated_loss', 0):.2f}"
-            ])
+            if violation.get('type') == 'shared_card_use':
+                # Handle shared card violations with special formatting
+                vehicles = ', '.join(violation.get('vehicles_involved', []))
+                drivers = ', '.join(violation.get('drivers_involved', []))
+                card_info = f"****{violation.get('card_last_4', 'Unknown')}"
+                time_span = f"{violation.get('time_span_minutes', 'Unknown')} min"
+                
+                table_data.append([
+                    'Shared Card Use',
+                    drivers,
+                    vehicles,
+                    time_span,
+                    'Multiple Locations',
+                    card_info,
+                    f"${violation.get('estimated_loss', 0):.2f}"
+                ])
+            else:
+                # Handle regular violations
+                card_used = f"****{violation.get('card_last_4', 'N/A')}" if violation.get('card_last_4') else 'N/A'
+                table_data.append([
+                    violation.get('type', '').replace('_', ' ').title(),
+                    violation.get('driver_name', 'Unknown'),
+                    violation.get('vehicle_id', 'Unknown'),
+                    violation.get('timestamp', 'Unknown'),
+                    violation.get('location', 'Unknown'),
+                    card_used,
+                    f"${violation.get('estimated_loss', 0):.2f}"
+                ])
         
         # Create table
         table = Table(table_data)

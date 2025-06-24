@@ -90,8 +90,8 @@ class FleetAuditor:
         return fuel_theft_violations
     
     def detect_ghost_jobs(self, distance_threshold_miles: float = 0.5, 
-                         time_buffer_minutes: int = 30) -> List[Dict]:
-        """Detect ghost jobs - jobs scheduled but no GPS activity at job site"""
+                         time_buffer_minutes: int = 45) -> List[Dict]:
+        """Enhanced ghost job detection with fuel cross-checking"""
         ghost_job_violations = []
         
         if self.job_data is None or self.gps_data is None:
@@ -101,7 +101,6 @@ class FleetAuditor:
         filtered_jobs, filtered_gps = self.get_filtered_data_for_comparison('jobs', 'gps')
         
         if filtered_jobs.empty or filtered_gps.empty:
-            # No overlap - can't detect ghost jobs
             return ghost_job_violations
         
         for _, job_record in filtered_jobs.iterrows():
@@ -112,59 +111,107 @@ class FleetAuditor:
             job_lat, job_lon = geocode_address(str(job_record['address']))
             
             if job_lat is None or job_lon is None:
-                # Skip if we can't geocode the job address
                 continue
             
             # Get GPS data for the assigned driver/vehicle
             if pd.notna(job_record['driver_id']):
-                # Filter by driver if available (assuming driver_id maps to vehicle_id)
                 relevant_gps = filtered_gps[
                     filtered_gps['vehicle_id'] == job_record['driver_id']
                 ]
+                assigned_vehicle = job_record['driver_id']
             else:
-                # If no specific driver, check all vehicles
                 relevant_gps = filtered_gps
+                assigned_vehicle = None
             
             if relevant_gps.empty:
                 continue
             
-            # Look for GPS activity within time window of scheduled job
+            # Extended time window for better detection
             job_window_start = job_record['scheduled_time'] - timedelta(minutes=time_buffer_minutes)
-            job_window_end = job_record['scheduled_time'] + timedelta(minutes=time_buffer_minutes * 2)  # Longer window after
+            job_window_end = job_record['scheduled_time'] + timedelta(minutes=time_buffer_minutes * 3)
             
             time_filtered_gps = relevant_gps[
                 (relevant_gps['timestamp'] >= job_window_start) &
                 (relevant_gps['timestamp'] <= job_window_end)
             ]
             
+            # Check for GPS activity at job location
+            nearby_gps = pd.DataFrame()
+            if not time_filtered_gps.empty:
+                nearby_gps = time_filtered_gps[
+                    time_filtered_gps.apply(
+                        lambda row: is_within_distance(
+                            row['lat'], row['lon'], job_lat, job_lon, distance_threshold_miles
+                        ), axis=1
+                    )
+                ]
+            
+            # Enhanced ghost job detection with multiple criteria
+            is_ghost_job = False
+            confidence_score = 0
+            detection_reasons = []
+            
+            # Criteria 1: No GPS activity at all during job window
             if time_filtered_gps.empty:
+                is_ghost_job = True
+                confidence_score += 3
+                detection_reasons.append("No GPS activity during scheduled job time")
+            
+            # Criteria 2: GPS activity exists but not at job location
+            elif nearby_gps.empty:
+                # Check if vehicle was elsewhere during job time (high confidence ghost job)
+                other_locations = time_filtered_gps.groupby(['lat', 'lon']).size()
+                if len(other_locations) > 0:
+                    # Vehicle was active but not at job site
+                    is_ghost_job = True
+                    confidence_score += 2
+                    detection_reasons.append(f"Vehicle active elsewhere during job (not within {distance_threshold_miles} miles)")
+                else:
+                    # Minimal GPS data, lower confidence
+                    confidence_score += 1
+                    detection_reasons.append("Limited GPS data at job location")
+            
+            # Criteria 3: Cross-check with fuel data if available
+            if self.fuel_data is not None and assigned_vehicle:
+                fuel_during_job = self.fuel_data[
+                    (self.fuel_data['vehicle_id'] == assigned_vehicle) &
+                    (self.fuel_data['timestamp'] >= job_window_start) &
+                    (self.fuel_data['timestamp'] <= job_window_end)
+                ]
+                
+                if not fuel_during_job.empty:
+                    # Check if fuel purchases were near job site
+                    fuel_near_job = False
+                    for _, fuel_record in fuel_during_job.iterrows():
+                        fuel_lat, fuel_lon = geocode_address(str(fuel_record['location']))
+                        if (fuel_lat and fuel_lon and 
+                            is_within_distance(fuel_lat, fuel_lon, job_lat, job_lon, 2.0)):  # 2 mile radius
+                            fuel_near_job = True
+                            break
+                    
+                    if not fuel_near_job:
+                        confidence_score += 1
+                        detection_reasons.append("Fuel purchases not near job site")
+            
+            # Only flag as ghost job if confidence is high enough and we have enough evidence
+            if is_ghost_job and confidence_score >= 2:
+                # Calculate estimated impact
+                estimated_hours = 2  # Default job duration estimate
+                hourly_rate = 25  # Conservative hourly rate
+                estimated_loss = estimated_hours * hourly_rate
+                
                 ghost_job_violations.append({
-                    'job_id': job_record['job_id'],
+                    'job_id': job_record.get('job_id', 'Unknown'),
                     'driver_id': job_record['driver_id'],
+                    'vehicle_id': assigned_vehicle,
                     'scheduled_time': job_record['scheduled_time'],
                     'address': job_record['address'],
                     'violation_type': 'ghost_job',
-                    'description': f"No GPS activity found near job site during scheduled time window"
-                })
-                continue
-            
-            # Check if any GPS records are near the job location
-            nearby_gps = time_filtered_gps[
-                time_filtered_gps.apply(
-                    lambda row: is_within_distance(
-                        row['lat'], row['lon'], job_lat, job_lon, distance_threshold_miles
-                    ), axis=1
-                )
-            ]
-            
-            if nearby_gps.empty:
-                ghost_job_violations.append({
-                    'job_id': job_record['job_id'],
-                    'driver_id': job_record['driver_id'],
-                    'scheduled_time': job_record['scheduled_time'],
-                    'address': job_record['address'],
-                    'violation_type': 'ghost_job',
-                    'description': f"GPS activity found during job window but not within {distance_threshold_miles} miles of job site"
+                    'severity': 'high' if confidence_score >= 3 else 'medium',
+                    'confidence_score': confidence_score,
+                    'estimated_loss': estimated_loss,
+                    'description': f"Ghost job detected: {'; '.join(detection_reasons)}",
+                    'detection_reasons': detection_reasons
                 })
         
         return ghost_job_violations
