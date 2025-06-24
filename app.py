@@ -405,7 +405,8 @@ def main():
         if st.button("App", key="nav_app", use_container_width=True):
             try:
                 st.session_state.current_page = 'app'
-                st.switch_page("pages/1_Product.py")
+                # Try different path formats for Streamlit Cloud
+                st.switch_page("1_Product")
             except Exception as e:
                 st.error(f"Navigation error: {e}")
     
@@ -413,7 +414,8 @@ def main():
         if st.button("Backup", key="nav_backup", use_container_width=True):
             try:
                 st.session_state.current_page = 'backup'
-                st.switch_page("pages/2_Backup.py")
+                # Try different path formats for Streamlit Cloud
+                st.switch_page("2_Backup")
             except Exception as e:
                 st.error(f"Navigation error: {e}")
     

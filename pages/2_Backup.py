@@ -639,11 +639,17 @@ def main():
     
     with col2:
         if st.button("Landing", key="nav_landing", use_container_width=True):
-            st.switch_page("app.py")
+            try:
+                st.switch_page("app")
+            except Exception as e:
+                st.error(f"Navigation error: {e}")
     
     with col3:
         if st.button("App", key="nav_app", use_container_width=True):
-            st.switch_page("pages/1_Product.py")
+            try:
+                st.switch_page("1_Product")
+            except Exception as e:
+                st.error(f"Navigation error: {e}")
     
     with col4:
         st.markdown("**Backup**")
