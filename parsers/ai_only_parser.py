@@ -84,9 +84,9 @@ Return JSON: {{"parsed_data":[ALL_ROWS], "violations":[VIOLATIONS]}}"""
             print("🚀 Using Claude Haiku for analysis...")
             response = self.client.messages.create(
                 model=self.primary_model,
-                max_tokens=4000,  # Increase for larger datasets
+                max_tokens=8000,  # Increased for months of data
                 temperature=0.1,
-                timeout=60.0,  # Longer timeout for more data
+                timeout=90.0,  # Longer timeout for more data
                 messages=[{"role": "user", "content": prompt}]
             )
             
