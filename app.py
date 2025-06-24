@@ -356,8 +356,8 @@ def main():
         st.markdown("## 🧭 Navigation")
         st.markdown("**Current:** Landing Page")
         st.markdown("**Available Pages:**")
-        st.markdown("- **🚛 Product** - Full fraud detection platform")
-        st.markdown("- **Working Product BACKUP** - Backup version")
+        st.markdown("- **Product** - Full fraud detection platform")
+        st.markdown("- **Backup** - Backup version")
         st.markdown("---")
         st.markdown("*Click on page names above to navigate*")
     
@@ -459,7 +459,7 @@ def main():
                 st.success("🎉 Ready to start your free trial! Subscription system coming soon.")
         with col2:
             st.markdown("**Already a subscriber?**")
-            st.markdown("👈 Use the sidebar to access the **🚛 Product** page")
+            st.markdown("👈 Use the sidebar to access the **Product** page")
     
     # Call to Action
     st.markdown("---")
