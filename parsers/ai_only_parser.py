@@ -69,6 +69,10 @@ Include ALL rows. No text outside JSON."""
         # HAIKU ONLY - no expensive Sonnet fallback
         try:
             print("🚀 Using Claude Haiku for analysis...")
+            print(f"🔍 API client initialized: {self.client is not None}")
+            print(f"🔍 Model: {self.primary_model}")
+            print(f"🔍 Prompt length: {len(prompt)} characters")
+            
             response = self.client.messages.create(
                 model=self.primary_model,
                 max_tokens=8000,  # Increased for months of data
@@ -76,6 +80,8 @@ Include ALL rows. No text outside JSON."""
                 timeout=90.0,  # Longer timeout for more data
                 messages=[{"role": "user", "content": prompt}]
             )
+            
+            print(f"🔍 API call successful, response received")
             
             result_text = response.content[0].text.strip()
             print(f"🔍 Raw AI response (first 500 chars): {result_text[:500]}...")
@@ -124,6 +130,9 @@ Include ALL rows. No text outside JSON."""
                 
         except Exception as e:
             error_msg = str(e)
+            print(f"❌ EXCEPTION in AI call: {type(e).__name__}: {e}")
+            print(f"❌ Full traceback: {e.__class__.__module__}.{e.__class__.__name__}")
+            
             if "authentication" in error_msg.lower() or "api_key" in error_msg.lower():
                 print(f"❌ Authentication failed: {e}")
                 error_msg = "API key not configured. Please set ANTHROPIC_API_KEY environment variable."
