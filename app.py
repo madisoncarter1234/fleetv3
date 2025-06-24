@@ -370,17 +370,24 @@ def display_demo_results(scenario_name, scenario_data):
                     st.write(f"**Estimated Loss:** ${violation['estimated_loss']:.2f}")
 
 def main():
-    # Simple working navigation for deployed version
-    with st.sidebar:
-        st.markdown("### Navigation")
-        st.markdown("**🏠 Landing Page** ← You are here")
-        
-        # Simple form-based navigation that should work in deployed environments
-        if st.button("🚛 Go to App", key="nav_to_app"):
-            st.switch_page("1_Product")
-            
-        if st.button("🔧 Go to Backup", key="nav_to_backup"):
-            st.switch_page("2_Backup")
+    # Header navigation
+    col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
+    
+    with col1:
+        st.markdown("# 🚛 FleetAudit.io")
+    
+    with col2:
+        st.markdown("**Landing**")
+    
+    with col3:
+        if st.button("App", key="nav_app", use_container_width=True):
+            st.switch_page("pages/1_Product.py")
+    
+    with col4:
+        if st.button("Backup", key="nav_backup", use_container_width=True):
+            st.switch_page("pages/2_Backup.py")
+    
+    st.markdown("---")
     
     # Hero Section
     st.markdown("""

@@ -628,17 +628,24 @@ def main():
     """Main app"""
     init_session_state()
     
-    # Simple working navigation for deployed version
-    with st.sidebar:
-        st.markdown("### Navigation")
-        
-        if st.button("🏠 Go to Landing", key="nav_to_landing"):
-            st.switch_page("app")
-            
-        if st.button("🚛 Go to App", key="nav_to_app"):
-            st.switch_page("1_Product")
-            
-        st.markdown("**🔧 Backup** ← You are here")
+    # Header navigation
+    col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
+    
+    with col1:
+        st.markdown("# 🚛 FleetAudit.io")
+    
+    with col2:
+        if st.button("Landing", key="nav_landing", use_container_width=True):
+            st.switch_page("app.py")
+    
+    with col3:
+        if st.button("App", key="nav_app", use_container_width=True):
+            st.switch_page("pages/1_Product.py")
+    
+    with col4:
+        st.markdown("**Backup**")
+    
+    st.markdown("---")
     
     # Styled header
     st.markdown("""
