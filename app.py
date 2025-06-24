@@ -9,7 +9,7 @@ st.set_page_config(
     page_title="FleetAudit.io - Fleet Fraud Detection",
     page_icon="🚛",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # Custom CSS for landing page styling
@@ -173,10 +173,33 @@ st.markdown("""
         box-shadow: 0 6px 20px rgba(31, 78, 121, 0.3);
     }
     
-    /* Remove Streamlit branding */
+    /* Remove Streamlit branding and navigation */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stDeployButton {display:none;}
+    
+    /* Hide automatic page navigation */
+    [data-testid="stSidebarNav"] {display: none;}
+    
+    /* Clean navigation links */
+    .nav-link {
+        display: block;
+        padding: 0.5rem 0;
+        color: #1f4e79;
+        text-decoration: none;
+        cursor: pointer;
+        font-size: 1.1rem;
+    }
+    
+    .nav-link:hover {
+        color: #2d5aa0;
+        text-decoration: underline;
+    }
+    
+    .nav-current {
+        font-weight: bold;
+        color: #2d5aa0;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -355,13 +378,14 @@ def main():
     with st.sidebar:
         st.markdown("### 🧭 Navigation")
         
-        if st.button("🏠 Landing Page", type="secondary", use_container_width=True, key="nav_landing"):
-            st.rerun()  # Already on landing page
-            
-        if st.button("🚛 App (Product)", type="primary", use_container_width=True, key="nav_app"):
+        # Current page
+        st.markdown("**🏠 Landing Page**")
+        
+        # Clickable navigation
+        if st.button("🚛 App", key="nav_app", use_container_width=True):
             st.switch_page("pages/1_Product.py")
             
-        if st.button("🔧 Backup", type="secondary", use_container_width=True, key="nav_backup"):
+        if st.button("🔧 Backup", key="nav_backup", use_container_width=True):
             st.switch_page("pages/2_Backup.py")
     
     # Hero Section

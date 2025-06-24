@@ -150,10 +150,13 @@ st.markdown("""
         font-size: 1.1rem;
     }
     
-    /* Remove Streamlit branding */
+    /* Remove Streamlit branding and navigation */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stDeployButton {display:none;}
+    
+    /* Hide automatic page navigation */
+    [data-testid="stSidebarNav"] {display: none;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -633,13 +636,13 @@ def main():
     with st.sidebar:
         st.markdown("### 🧭 Navigation")
         
-        if st.button("🏠 Landing Page", type="secondary", use_container_width=True, key="nav_landing"):
+        if st.button("🏠 Landing Page", key="nav_landing", use_container_width=True):
             st.switch_page("app.py")
             
-        if st.button("🚛 App (Product)", type="primary", use_container_width=True, key="nav_app"):
-            st.rerun()  # Already on app page
+        # Current page
+        st.markdown("**🚛 App**")
             
-        if st.button("🔧 Backup", type="secondary", use_container_width=True, key="nav_backup"):
+        if st.button("🔧 Backup", key="nav_backup", use_container_width=True):
             st.switch_page("pages/2_Backup.py")
     
     # Styled header
