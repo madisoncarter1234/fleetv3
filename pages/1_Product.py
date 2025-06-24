@@ -151,7 +151,6 @@ st.markdown("""
     }
     
     /* Remove Streamlit branding */
-    #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stDeployButton {display:none;}
 </style>
