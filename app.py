@@ -75,7 +75,8 @@ def upload_fuel_data():
                 'Card': 'card_number',
                 'Fuel Card': 'card_number',
                 'Card Last 4': 'card_last_4',
-                'Last 4': 'card_last_4'
+                'Last 4': 'card_last_4',
+                'card_last4': 'card_last_4'
             }
             
             # Rename columns
@@ -108,12 +109,6 @@ def upload_fuel_data():
             st.write("**Preview:**")
             st.dataframe(fuel_df.head(), use_container_width=True)
             
-            # Show available columns for debugging
-            st.write("**Available columns:**", list(fuel_df.columns))
-            if 'card_last_4' in fuel_df.columns:
-                unique_cards = fuel_df['card_last_4'].unique()
-                st.write(f"**Cards detected:** {len(unique_cards)} unique cards")
-                st.write(f"**Card sample:** {list(unique_cards)[:5]}")
             
         except Exception as e:
             st.error(f"❌ Error loading fuel data: {str(e)}")
@@ -317,7 +312,7 @@ Return JSON:
                             if violation.get('type') == 'shared_card_use':
                                 card_info = f"Card ****{violation.get('card_last_4', 'Unknown')}"
                                 vehicles = ', '.join(violation.get('vehicles_involved', []))
-                                with st.expander(f"🚨 **Shared Card Use** - {card_info} ({vehicles})"):
+                                with st.expander(f"**Shared Card Use** - {card_info} ({vehicles})"):
                                     st.write(f"**Card Last 4:** ****{violation.get('card_last_4', 'Unknown')}")
                                     st.write(f"**Vehicles Involved:** {', '.join(violation.get('vehicles_involved', []))}")
                                     st.write(f"**Drivers Involved:** {', '.join(violation.get('drivers_involved', []))}")
