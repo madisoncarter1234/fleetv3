@@ -9,7 +9,7 @@ st.set_page_config(
     page_title="FleetAudit.io - Fleet Fraud Detection",
     page_icon="🚛",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 # Custom CSS for landing page styling
@@ -351,6 +351,16 @@ def display_demo_results(scenario_name, scenario_data):
                     st.write(f"**Estimated Loss:** ${violation['estimated_loss']:.2f}")
 
 def main():
+    # Sidebar navigation help
+    with st.sidebar:
+        st.markdown("## 🧭 Navigation")
+        st.markdown("**Current:** Landing Page")
+        st.markdown("**Available Pages:**")
+        st.markdown("- **🚛 Product** - Full fraud detection platform")
+        st.markdown("- **Working Product BACKUP** - Backup version")
+        st.markdown("---")
+        st.markdown("*Click on page names above to navigate*")
+    
     # Hero Section
     st.markdown("""
     <div class="hero-section">
@@ -442,9 +452,14 @@ def main():
         </div>
         """, unsafe_allow_html=True)
         
-        if st.button("🚀 Start Free Trial", type="primary", use_container_width=True):
-            st.balloons()
-            st.success("🎉 Ready to start your free trial! Subscription system coming soon.")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🚀 Start Free Trial", type="primary", use_container_width=True):
+                st.balloons()
+                st.success("🎉 Ready to start your free trial! Subscription system coming soon.")
+        with col2:
+            st.markdown("**Already a subscriber?**")
+            st.markdown("👈 Use the sidebar to access the **🚛 Product** page")
     
     # Call to Action
     st.markdown("---")
