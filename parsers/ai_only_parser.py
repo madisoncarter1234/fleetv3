@@ -12,7 +12,7 @@ class AIOnlyParser:
         self.primary_model = "claude-3-haiku-20240307"  # Fast & cheap
         self.fallback_model = "claude-3-5-sonnet-20241022"  # Smart fallback
     
-    def parse_and_detect_violations(self, file_path: str, gps_data: str = None, job_data: str = None) -> Dict:
+    def parse_and_detect_violations(self, fuel_file_path: str, gps_file_path: str = None, job_file_path: str = None) -> Dict:
         """
         Let AI do EVERYTHING:
         1. Parse the fuel CSV
@@ -21,14 +21,14 @@ class AIOnlyParser:
         4. Detect violations
         5. Return clean results
         """
-        # Read and truncate fuel CSV for cost optimization
-        with open(file_path, 'r') as f:
+        # Read RAW fuel CSV content
+        with open(fuel_file_path, 'r') as f:
             fuel_csv_content = f.read()
         
         # Smart batching for large files (don't throw away data)
         fuel_csv_lines = fuel_csv_content.split('\n')
         if len(fuel_csv_lines) > 500:  # Reasonable limit
-            print(f"Large file detected ({len(fuel_csv_lines)} rows). Processing first 500 rows.")
+            print(f"Large fuel file detected ({len(fuel_csv_lines)} rows). Processing first 500 rows.")
         
         # Build optimized prompt for Haiku
         prompt = f"""Fleet audit expert. Analyze fuel CSV, detect violations.
@@ -36,50 +36,67 @@ class AIOnlyParser:
 FUEL DATA:
 {fuel_csv_content}"""
         
-        # Add GPS data if provided
-        if gps_data:
-            gps_lines = gps_data.split('\n')
-            if len(gps_lines) > 200:
-                print(f"Large GPS file detected ({len(gps_lines)} rows). Processing first 200 rows.")
-            
-            prompt += f"""
+        # Add RAW GPS data if provided
+        if gps_file_path:
+            try:
+                with open(gps_file_path, 'r') as f:
+                    gps_csv_content = f.read()
+                    
+                gps_lines = gps_csv_content.split('\n')
+                if len(gps_lines) > 200:
+                    print(f"Large GPS file detected ({len(gps_lines)} rows). Processing first 200 rows.")
+                
+                prompt += f"""
 
 GPS DATA:
-{gps_data}
+{gps_csv_content}
 
 GPS CHECKS: Match fuel locations, detect stolen cards, verify truck presence."""
+            except Exception as e:
+                print(f"Could not read GPS file: {e}")
         
-        # Add job data if provided
-        if job_data:
-            job_lines = job_data.split('\n')
-            if len(job_lines) > 100:
-                print(f"Large job file detected ({len(job_lines)} rows). Processing first 100 rows.")
-                
-            prompt += f"""
+        # Add RAW job data if provided
+        if job_file_path:
+            try:
+                with open(job_file_path, 'r') as f:
+                    job_csv_content = f.read()
+                    
+                job_lines = job_csv_content.split('\n')
+                if len(job_lines) > 100:
+                    print(f"Large job file detected ({len(job_lines)} rows). Processing first 100 rows.")
+                    
+                prompt += f"""
 
 JOB DATA:
-{job_data}
+{job_csv_content}
 
 JOB CHECKS: Match fuel to assigned sites, detect personal use."""
+            except Exception as e:
+                print(f"Could not read job file: {e}")
         
         prompt += """
 
+CRITICAL: Parse EVERY SINGLE ROW in the fuel CSV. Do NOT return just examples or samples.
+
 RULES:
-1. Parse ALL CSV rows (not just samples)
-2. Extract: timestamp, location, gallons, vehicle_id, amount, driver_name (if available)
+1. Parse ALL CSV rows (every single transaction)
+2. Extract: timestamp, location, gallons, vehicle_id, amount, driver_name (if available)  
 3. Fix timestamps (skip malformed like "24:00:00")
 4. Find violations: late night, overfills, rapid refills, personal use
 5. If GPS: check truck was at station
 6. If jobs: check fuel near work sites
 
-EXAMPLE OUTPUT:
+EXAMPLE FORMAT (but include ALL parsed rows):
 {
-  "parsed_data": [{"timestamp": "2024-06-15 14:30:00", "location": "Shell #1234", "gallons": 12.5, "vehicle_id": "TRUCK-001", "amount": 45.50, "driver_name": "John Smith"}],
+  "parsed_data": [
+    {"timestamp": "2024-06-15 14:30:00", "location": "Shell #1234", "gallons": 12.5, "vehicle_id": "TRUCK-001", "amount": 45.50, "driver_name": "John Smith"},
+    {"timestamp": "2024-06-15 16:45:00", "location": "Exxon #5678", "gallons": 15.2, "vehicle_id": "TRUCK-002", "amount": 58.75, "driver_name": "Jane Doe"}
+  ],
   "violations": [{"type": "after_hours", "vehicle_id": "TRUCK-001", "driver_name": "John Smith", "description": "2:30 AM purchase", "severity": "high", "confidence": 0.9, "estimated_loss": 50.0, "timestamp": "2024-06-15 02:30:00", "location": "Shell #1234"}],
   "summary": {"total_transactions": 50, "violations_found": 3}
 }
 
-Return ONLY JSON:"""
+Return ALL parsed data as JSON:"""
         
         # Try Haiku first (fast & cheap)
         try:

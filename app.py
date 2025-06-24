@@ -183,22 +183,23 @@ def main():
             
             if gps_file is not None:
                 try:
-                    # Save uploaded file temporarily
+                    # Save uploaded file temporarily for AI processing
                     with tempfile.NamedTemporaryFile(delete=False, suffix='.csv') as tmp_file:
                         tmp_file.write(gps_file.getvalue())
                         tmp_path = tmp_file.name
                     
-                    # Parse GPS data
-                    if gps_provider == "auto-detect":
-                        gps_data = GPSParser.auto_parse(tmp_path)
-                    else:
-                        gps_data = getattr(GPSParser, f'parse_{gps_provider}')(tmp_path)
+                    # Store raw file path for AI (don't use old parser!)
+                    st.session_state.gps_file_path = tmp_path
                     
-                    st.session_state.gps_data = gps_data
-                    st.success(f"✅ GPS data loaded: {len(gps_data)} records")
+                    # Quick parse just to show record count (for display only)
+                    try:
+                        quick_df = pd.read_csv(tmp_path)
+                        st.session_state.gps_data = quick_df  # For overlap checking only
+                        st.success(f"✅ GPS file uploaded: {len(quick_df)} records")
+                    except:
+                        st.success(f"✅ GPS file uploaded successfully")
                     
-                    # Clean up temp file
-                    os.unlink(tmp_path)
+                    # Keep temp file for AI processing (will be cleaned up later)
                     
                 except Exception as e:
                     st.error(f"❌ Error parsing GPS file: {str(e)}")
@@ -245,17 +246,19 @@ def main():
                     from parsers.ai_only_parser import AIOnlyParser
                     ai_parser = AIOnlyParser()
                     
-                    # Prepare GPS and job data for AI if available
-                    gps_csv_data = None
-                    job_csv_data = None
+                    # Get RAW GPS and job files for AI (not the parsed session state data!)
+                    gps_file_path = None
+                    job_file_path = None
                     
-                    if st.session_state.gps_data is not None:
-                        gps_csv_data = st.session_state.gps_data.to_csv(index=False)
+                    # Check if GPS file was uploaded this session
+                    if hasattr(st.session_state, 'gps_file_path'):
+                        gps_file_path = st.session_state.gps_file_path
                     
-                    if st.session_state.job_data is not None:
-                        job_csv_data = st.session_state.job_data.to_csv(index=False)
+                    # Check if job file was uploaded this session  
+                    if hasattr(st.session_state, 'job_file_path'):
+                        job_file_path = st.session_state.job_file_path
                     
-                    ai_result = ai_parser.parse_and_detect_violations(tmp_path, gps_csv_data, job_csv_data)
+                    ai_result = ai_parser.parse_and_detect_violations(tmp_path, gps_file_path, job_file_path)
                     
                     if 'dataframe' in ai_result and len(ai_result['dataframe']) > 0:
                         fuel_data = ai_result['dataframe']
@@ -299,23 +302,24 @@ def main():
             
             if job_file is not None:
                 try:
-                    # Save uploaded file temporarily
+                    # Save uploaded file temporarily for AI processing
                     file_extension = job_file.name.split('.')[-1]
                     with tempfile.NamedTemporaryFile(delete=False, suffix=f'.{file_extension}') as tmp_file:
                         tmp_file.write(job_file.getvalue())
                         tmp_path = tmp_file.name
                     
-                    # Parse job data
-                    if job_provider == "auto-detect":
-                        job_data = JobParser.auto_parse(tmp_path)
-                    else:
-                        job_data = getattr(JobParser, f'parse_{job_provider}')(tmp_path)
+                    # Store raw file path for AI (don't use old parser!)
+                    st.session_state.job_file_path = tmp_path
                     
-                    st.session_state.job_data = job_data
-                    st.success(f"✅ Job data loaded: {len(job_data)} records")
+                    # Quick parse just to show record count (for display only)
+                    try:
+                        quick_df = pd.read_csv(tmp_path)
+                        st.session_state.job_data = quick_df  # For overlap checking only
+                        st.success(f"✅ Job file uploaded: {len(quick_df)} records")
+                    except:
+                        st.success(f"✅ Job file uploaded successfully")
                     
-                    # Clean up temp file
-                    os.unlink(tmp_path)
+                    # Keep temp file for AI processing (will be cleaned up later)
                     
                 except Exception as e:
                     st.error(f"❌ Error parsing job file: {str(e)}")
