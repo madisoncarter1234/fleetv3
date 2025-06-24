@@ -632,13 +632,19 @@ def main():
     # Sidebar navigation
     with st.sidebar:
         st.markdown("## 🧭 Navigation")
-        st.markdown("**Current:** Product (Full Platform)")
         st.markdown("---")
         
-        st.markdown("**Available Pages:**")
-        st.markdown("👆 Check the top of this sidebar for automatic page navigation")
+        if st.button("🏠 LANDING PAGE", type="secondary", use_container_width=True, key="nav_home"):
+            st.markdown('<meta http-equiv="refresh" content="0; url=./">', unsafe_allow_html=True)
+            st.rerun()
+            
+        if st.button("🔧 BACKUP PAGE", type="secondary", use_container_width=True, key="nav_backup"):
+            st.markdown('<meta http-equiv="refresh" content="0; url=./2_Backup">', unsafe_allow_html=True)
+            st.rerun()
+            
         st.markdown("---")
-        st.markdown("*This is the full fraud detection platform*")
+        st.markdown("**Current:** Product (Full Platform)")
+        st.markdown("*This is the WORKING fraud detection platform*")
     
     # Styled header
     st.markdown("""

@@ -9,7 +9,7 @@ st.set_page_config(
     page_title="FleetAudit.io - Fleet Fraud Detection",
     page_icon="🚛",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 # Custom CSS for landing page styling
@@ -351,6 +351,25 @@ def display_demo_results(scenario_name, scenario_data):
                     st.write(f"**Estimated Loss:** ${violation['estimated_loss']:.2f}")
 
 def main():
+    # Sidebar with WORKING navigation buttons
+    with st.sidebar:
+        st.markdown("## 🧭 Navigation")
+        st.markdown("---")
+        
+        # WORKING buttons that actually navigate
+        if st.button("🚛 PRODUCT PAGE", type="primary", use_container_width=True, key="nav_product"):
+            # Create a link to the product page
+            st.markdown('<meta http-equiv="refresh" content="0; url=./1_Product">', unsafe_allow_html=True)
+            st.rerun()
+            
+        if st.button("🔧 BACKUP PAGE", type="secondary", use_container_width=True, key="nav_backup"):
+            # Create a link to the backup page  
+            st.markdown('<meta http-equiv="refresh" content="0; url=./2_Backup">', unsafe_allow_html=True)
+            st.rerun()
+            
+        st.markdown("---")
+        st.markdown("**Current:** Landing Page")
+    
     # Hero Section
     st.markdown("""
     <div class="hero-section">
@@ -448,11 +467,9 @@ def main():
                 st.balloons()
                 st.success("🎉 Ready to start your free trial! Subscription system coming soon.")
         with col2:
-            st.markdown("**Already a subscriber?**")
-            # Add manual access until auto-navigation works
-            if st.button("Access Product Page", type="secondary"):
-                st.info("📋 Navigate to 'Product' in the sidebar (hamburger menu ☰) to access the full platform")
-            st.markdown("*Or use the sidebar navigation*")
+            if st.button("🚛 Access Product Page", type="primary", use_container_width=True):
+                st.markdown('<meta http-equiv="refresh" content="0; url=./1_Product">', unsafe_allow_html=True)
+                st.rerun()
     
     # Call to Action
     st.markdown("---")
