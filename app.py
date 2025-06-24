@@ -234,8 +234,6 @@ Return JSON:
                     
                     json_text = result_text[json_start:json_end]
                     fraud_results = json.loads(json_text)
-                else:
-                    raise ValueError("No JSON found in response")
                     
                     st.session_state.fraud_results = fraud_results
                     
@@ -260,7 +258,7 @@ Return JSON:
                                     st.write(f"**Estimated Loss:** ${violation['estimated_loss']:.2f}")
                     else:
                         st.success("🎉 No fraud detected in your fleet data!")
-                
+                        
                 else:
                     st.error("❌ Failed to get valid response from AI")
                     
