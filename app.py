@@ -9,7 +9,7 @@ st.set_page_config(
     page_title="FleetAudit.io - Fleet Fraud Detection",
     page_icon="🚛",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 # Custom CSS for landing page styling
@@ -371,6 +371,11 @@ def display_demo_results(scenario_name, scenario_data):
                     st.write(f"**Estimated Loss:** ${violation['estimated_loss']:.2f}")
 
 def main():
+    # Simple sidebar navigation
+    with st.sidebar:
+        st.markdown("**🏠 Landing Page**")
+        st.markdown("🚛 App")  
+        st.markdown("🔧 Backup")
     
     # Hero Section
     st.markdown("""
