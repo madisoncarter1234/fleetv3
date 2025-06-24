@@ -239,37 +239,33 @@ def main():
                         tmp_file.write(fuel_file.getvalue())
                         tmp_path = tmp_file.name
                     
-                    # FUCK THE MANUAL LOGIC - 100% AI EVERYTHING
-                    from parsers.ai_only_parser import AIOnlyParser
-                    ai_parser = AIOnlyParser()
+                    # Simple pandas parsing like GPS/jobs - JUST GET IT WORKING
+                    fuel_data = pd.read_csv(tmp_path)
                     
-                    # Get RAW GPS and job files for AI (not the parsed session state data!)
-                    gps_file_path = None
-                    job_file_path = None
+                    # Basic column standardization
+                    column_mapping = {
+                        'Transaction Date': 'timestamp',
+                        'Date': 'timestamp', 
+                        'Site Name': 'location',
+                        'Merchant Name': 'location',
+                        'Location': 'location',
+                        'Gallons': 'gallons',
+                        'Fuel Quantity': 'gallons',
+                        'Vehicle Number': 'vehicle_id',
+                        'Vehicle': 'vehicle_id',
+                        'Amount': 'amount',
+                        'Total Cost': 'amount'
+                    }
                     
-                    # Check if GPS file was uploaded this session
-                    if hasattr(st.session_state, 'gps_file_path'):
-                        gps_file_path = st.session_state.gps_file_path
+                    for old_col, new_col in column_mapping.items():
+                        if old_col in fuel_data.columns:
+                            fuel_data = fuel_data.rename(columns={old_col: new_col})
                     
-                    # Check if job file was uploaded this session  
-                    if hasattr(st.session_state, 'job_file_path'):
-                        job_file_path = st.session_state.job_file_path
+                    if 'timestamp' in fuel_data.columns:
+                        fuel_data['timestamp'] = pd.to_datetime(fuel_data['timestamp'], errors='coerce')
                     
-                    ai_result = ai_parser.parse_and_detect_violations(tmp_path, gps_file_path, job_file_path)
-                    
-                    if 'dataframe' in ai_result:
-                        fuel_data = ai_result['dataframe']
-                        # Store AI violations for display
-                        st.session_state.ai_violations = ai_result.get('violations', [])
-                        st.session_state.ai_summary = ai_result.get('summary', {})
-                        
-                        if len(fuel_data) == 0:
-                            st.warning("⚠️ AI parsed the file but found no valid fuel transactions. Please check your CSV format.")
-                        
-                    else:
-                        # AI failed completely - show error
-                        st.error(f"❌ AI parsing failed: {ai_result.get('error', 'Unknown error')}. Please check your CSV format.")
-                        return
+                    st.session_state.ai_violations = []
+                    st.session_state.ai_summary = {'basic_parsing': True}
                     
                     st.session_state.fuel_data = fuel_data
                     st.success(f"✅ Fuel data loaded: {len(fuel_data)} records")
