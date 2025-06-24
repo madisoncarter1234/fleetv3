@@ -39,16 +39,18 @@ class AIOnlyParser:
         with open(fuel_file_path, 'r') as f:
             fuel_csv_content = f.read()
         
-        # Smart batching for large files (don't throw away data)
+        # Check file size but process all data
         fuel_csv_lines = fuel_csv_content.split('\n')
-        if len(fuel_csv_lines) > 500:  # Reasonable limit
-            print(f"Large fuel file detected ({len(fuel_csv_lines)} rows). Processing first 500 rows.")
+        print(f"Processing fuel file with {len(fuel_csv_lines)} rows")
         
-        # Build optimized prompt for Haiku
-        prompt = f"""Fleet audit expert. Analyze fuel CSV, detect violations.
+        # Build ultra-optimized prompt for Haiku
+        prompt = f"""Parse fuel CSV, find violations.
 
-FUEL DATA:
-{fuel_csv_content}"""
+CSV:
+{fuel_csv_content}
+
+Find: theft, after-hours, overfills, rapid refills, personal use.
+Return JSON: {{"parsed_data":[ALL_ROWS], "violations":[VIOLATIONS]}}"""
         
         # Add RAW GPS data if provided
         if gps_file_path:
@@ -57,15 +59,9 @@ FUEL DATA:
                     gps_csv_content = f.read()
                     
                 gps_lines = gps_csv_content.split('\n')
-                if len(gps_lines) > 200:
-                    print(f"Large GPS file detected ({len(gps_lines)} rows). Processing first 200 rows.")
+                print(f"Including GPS data with {len(gps_lines)} rows")
                 
-                prompt += f"""
-
-GPS DATA:
-{gps_csv_content}
-
-GPS CHECKS: Match fuel locations, detect stolen cards, verify truck presence."""
+                prompt += f"\n\nGPS:\n{gps_csv_content}\nCheck: truck at station?"
             except Exception as e:
                 print(f"Could not read GPS file: {e}")
         
@@ -76,40 +72,12 @@ GPS CHECKS: Match fuel locations, detect stolen cards, verify truck presence."""
                     job_csv_content = f.read()
                     
                 job_lines = job_csv_content.split('\n')
-                if len(job_lines) > 100:
-                    print(f"Large job file detected ({len(job_lines)} rows). Processing first 100 rows.")
+                print(f"Including job data with {len(job_lines)} rows")
                     
-                prompt += f"""
-
-JOB DATA:
-{job_csv_content}
-
-JOB CHECKS: Match fuel to assigned sites, detect personal use."""
+                prompt += f"\n\nJOBS:\n{job_csv_content}\nCheck: fuel near work?"
             except Exception as e:
                 print(f"Could not read job file: {e}")
         
-        prompt += """
-
-CRITICAL: Parse EVERY SINGLE ROW in the fuel CSV. Include ALL transactions in parsed_data array.
-
-RULES:
-1. Parse ALL CSV rows (every single transaction) - include all in parsed_data
-2. Extract: timestamp, location, gallons, vehicle_id, amount, driver_name (if available)  
-3. Fix timestamps (skip malformed like "24:00:00")
-4. Find violations: late night, overfills, rapid refills, personal use
-5. If GPS: check truck was at station
-6. If jobs: check fuel near work sites
-
-IMPORTANT: If dataset is large, you can abbreviate violations but MUST include ALL transactions in parsed_data.
-
-RETURN FORMAT:
-{
-  "parsed_data": [ALL_TRANSACTIONS_HERE],
-  "violations": [FOUND_VIOLATIONS],
-  "summary": {"total_transactions": ACTUAL_COUNT, "violations_found": VIOLATION_COUNT}
-}
-
-Return complete JSON with ALL parsed data:"""
         
         # HAIKU ONLY - no expensive Sonnet fallback
         try:
@@ -127,15 +95,16 @@ Return complete JSON with ALL parsed data:"""
             
             # Return Haiku result - always create DataFrame for app compatibility
             if result:
-                print("✅ Haiku analysis completed!")
+                print(f"✅ Haiku completed! Found {len(result.get('parsed_data', []))} transactions")
                 # Ensure we always have a dataframe for app.py compatibility
                 if result.get('parsed_data'):
                     df = pd.DataFrame(result['parsed_data'])
+                    print(f"DataFrame created with columns: {list(df.columns)}")
                     if 'timestamp' in df.columns:
                         df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
                     result['dataframe'] = df
                 else:
-                    # Empty but valid result
+                    print("⚠️ No parsed_data in AI result")
                     result['dataframe'] = pd.DataFrame()
                     result['parsed_data'] = []
                 return result
