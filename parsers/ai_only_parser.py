@@ -76,36 +76,35 @@ JOB CHECKS: Match fuel to assigned sites, detect personal use."""
         
         prompt += """
 
-CRITICAL: Parse EVERY SINGLE ROW in the fuel CSV. Do NOT return just examples or samples.
+CRITICAL: Parse EVERY SINGLE ROW in the fuel CSV. Include ALL transactions in parsed_data array.
 
 RULES:
-1. Parse ALL CSV rows (every single transaction)
+1. Parse ALL CSV rows (every single transaction) - include all in parsed_data
 2. Extract: timestamp, location, gallons, vehicle_id, amount, driver_name (if available)  
 3. Fix timestamps (skip malformed like "24:00:00")
 4. Find violations: late night, overfills, rapid refills, personal use
 5. If GPS: check truck was at station
 6. If jobs: check fuel near work sites
 
-EXAMPLE FORMAT (but include ALL parsed rows):
+IMPORTANT: If dataset is large, you can abbreviate violations but MUST include ALL transactions in parsed_data.
+
+RETURN FORMAT:
 {
-  "parsed_data": [
-    {"timestamp": "2024-06-15 14:30:00", "location": "Shell #1234", "gallons": 12.5, "vehicle_id": "TRUCK-001", "amount": 45.50, "driver_name": "John Smith"},
-    {"timestamp": "2024-06-15 16:45:00", "location": "Exxon #5678", "gallons": 15.2, "vehicle_id": "TRUCK-002", "amount": 58.75, "driver_name": "Jane Doe"}
-  ],
-  "violations": [{"type": "after_hours", "vehicle_id": "TRUCK-001", "driver_name": "John Smith", "description": "2:30 AM purchase", "severity": "high", "confidence": 0.9, "estimated_loss": 50.0, "timestamp": "2024-06-15 02:30:00", "location": "Shell #1234"}],
-  "summary": {"total_transactions": 50, "violations_found": 3}
+  "parsed_data": [ALL_TRANSACTIONS_HERE],
+  "violations": [FOUND_VIOLATIONS],
+  "summary": {"total_transactions": ACTUAL_COUNT, "violations_found": VIOLATION_COUNT}
 }
 
-Return ALL parsed data as JSON:"""
+Return complete JSON with ALL parsed data:"""
         
         # Try Haiku first (fast & cheap)
         try:
             print("🚀 Using Claude Haiku for analysis...")
             response = self.client.messages.create(
                 model=self.primary_model,
-                max_tokens=2000,  # Smaller for Haiku
+                max_tokens=4000,  # Increase for larger datasets
                 temperature=0.1,
-                timeout=30.0,  # Faster timeout
+                timeout=60.0,  # Longer timeout for more data
                 messages=[{"role": "user", "content": prompt}]
             )
             

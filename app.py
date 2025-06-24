@@ -379,16 +379,9 @@ def main():
             
             st.success(f"✅ Data loaded: {', '.join(uploaded_data)}")
             
-            # Initialize auditor to check for date overlap issues
-            auditor = FleetAuditor()
-            auditor.load_data(
-                gps_df=st.session_state.gps_data,
-                fuel_df=st.session_state.fuel_data,
-                job_df=st.session_state.job_data
-            )
-            
-            # Check for overlap warnings
-            overlap_warnings = auditor.get_overlap_warnings()
+            # Skip old auditor when using AI - it expects different column formats
+            auditor = FleetAuditor()  # Just create instance, don't load data
+            overlap_warnings = []  # Skip overlap checking for AI mode
             if overlap_warnings:
                 st.warning("⚠️ **Data Time Period Issues Detected:**")
                 for warning in overlap_warnings:
