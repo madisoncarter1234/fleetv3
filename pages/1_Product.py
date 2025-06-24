@@ -150,13 +150,10 @@ st.markdown("""
         font-size: 1.1rem;
     }
     
-    /* Remove Streamlit branding and navigation */
+    /* Remove Streamlit branding */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stDeployButton {display:none;}
-    
-    /* Hide automatic page navigation */
-    [data-testid="stSidebarNav"] {display: none;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -632,15 +629,6 @@ def main():
     """Main app"""
     init_session_state()
     
-    # Simple sidebar navigation
-    with st.sidebar:
-        # Landing page link
-        st.markdown('<a href="/" target="_self">🏠 Landing Page</a>', unsafe_allow_html=True)
-        
-        st.markdown("**🚛 App**")
-        
-        # Backup link
-        st.markdown('<a href="../2_Backup" target="_self">🔧 Backup</a>', unsafe_allow_html=True)
     
     # Styled header
     st.markdown("""

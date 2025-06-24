@@ -173,13 +173,10 @@ st.markdown("""
         box-shadow: 0 6px 20px rgba(31, 78, 121, 0.3);
     }
     
-    /* Remove Streamlit branding and navigation */
+    /* Remove Streamlit branding */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stDeployButton {display:none;}
-    
-    /* Hide automatic page navigation */
-    [data-testid="stSidebarNav"] {display: none;}
     
     /* Clean navigation links */
     .nav-link {
@@ -374,15 +371,6 @@ def display_demo_results(scenario_name, scenario_data):
                     st.write(f"**Estimated Loss:** ${violation['estimated_loss']:.2f}")
 
 def main():
-    # Simple sidebar navigation
-    with st.sidebar:
-        st.markdown("**🏠 Landing Page**")
-        
-        # App link - using HTML link to the page
-        st.markdown('<a href="1_Product" target="_self">🚛 App</a>', unsafe_allow_html=True)
-        
-        # Backup link - using HTML link to the page  
-        st.markdown('<a href="2_Backup" target="_self">🔧 Backup</a>', unsafe_allow_html=True)
     
     # Hero Section
     st.markdown("""
