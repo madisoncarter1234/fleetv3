@@ -359,10 +359,10 @@ def main():
         
         # Manual navigation buttons since auto-navigation isn't working
         if st.button("🚛 Product (Full Platform)", use_container_width=True):
-            st.switch_page("1_Product")
+            st.switch_page("pages/1_Product.py")
             
         if st.button("🔧 Backup Version", use_container_width=True):
-            st.switch_page("2_Backup")
+            st.switch_page("pages/2_Backup.py")
             
         st.markdown("---")
         st.markdown("*Use buttons above to access full platform*")
