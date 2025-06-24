@@ -176,17 +176,15 @@ Return ONLY a JSON object with this exact format:
                     # Combine date and time with PROPER validation
                     combined = df[date_col].astype(str) + ' ' + df[time_col].astype(str)
                     
-                    # Use our robust timestamp parser that handles malformed times
-                    from .fuel_parser import FuelParser
-                    normalized_df['timestamp'] = FuelParser._parse_timestamps_with_logging(combined, date_col, time_col)
+                    # Parse timestamps directly - eliminate old parser dependency
+                    normalized_df['timestamp'] = pd.to_datetime(combined, errors='coerce')
                 elif date_col in df.columns:
                     normalized_df['timestamp'] = pd.to_datetime(df[date_col], errors='coerce')
             else:
                 # Single timestamp column
                 if mapping['timestamp'] in df.columns:
-                    # Use robust timestamp parser instead of basic pd.to_datetime
-                    from .fuel_parser import FuelParser
-                    normalized_df['timestamp'] = FuelParser._parse_timestamps(df[mapping['timestamp']])
+                    # Parse timestamps directly - eliminate old parser dependency
+                    normalized_df['timestamp'] = pd.to_datetime(df[mapping['timestamp']], errors='coerce')
         
         # Handle other columns
         for target_col, source_col in mapping.items():

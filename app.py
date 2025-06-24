@@ -5,14 +5,11 @@ from datetime import datetime, timedelta
 import tempfile
 import traceback
 
-# Import our custom modules
-from parsers.gps_parser import GPSParser
-from parsers.fuel_parser import FuelParser
-from parsers.job_parser import JobParser
+# Import AI-only modules (OLD MANUAL PARSERS ELIMINATED)
+from parsers.ai_only_parser import AIOnlyParser
 from logic.matcher import FleetAuditor
 from logic.report_generator import ReportGenerator
 from email_service.send_email import EmailSender
-from logic.ai_violation_insights import AIViolationInsights
 
 # Page configuration
 st.set_page_config(
@@ -266,10 +263,9 @@ def main():
                         st.session_state.ai_violations = ai_result.get('violations', [])
                         st.session_state.ai_summary = ai_result.get('summary', {})
                     else:
-                        # Fallback to old method only if AI completely fails
-                        fuel_data = FuelParser.parse_with_ai(tmp_path)
-                        st.session_state.ai_violations = []
-                        st.session_state.ai_summary = {}
+                        # AI failed completely - show error
+                        st.error("❌ AI parsing failed. Please check your CSV format.")
+                        return
                     
                     st.session_state.fuel_data = fuel_data
                     st.success(f"✅ Fuel data loaded: {len(fuel_data)} records")
@@ -447,55 +443,13 @@ def main():
             if missing_data:
                 st.write(f"**Optional:** Upload {', '.join(missing_data)} for additional violation types")
             
-            # Audit configuration
-            st.subheader("⚙️ Audit Parameters")
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.write("**Fuel Theft Detection**")
-                fuel_distance_threshold = st.slider(
-                    "Distance threshold (miles)",
-                    min_value=0.5, max_value=5.0, value=1.0, step=0.5,
-                    help="Maximum distance from fuel purchase location"
-                )
-                fuel_time_threshold = st.slider(
-                    "Time window (minutes)",
-                    min_value=5, max_value=60, value=15, step=5,
-                    help="Time window around fuel purchase"
-                )
-                
-                st.write("**Idle Abuse Detection**")
-                idle_time_threshold = st.slider(
-                    "Minimum idle time (minutes)",
-                    min_value=5, max_value=60, value=10, step=5,
-                    help="Minimum time to consider as excessive idling"
-                )
-            
-            with col2:
-                st.write("**Ghost Job Detection**")
-                job_distance_threshold = st.slider(
-                    "Job site radius (miles)",
-                    min_value=0.1, max_value=2.0, value=0.5, step=0.1,
-                    help="Required proximity to job site"
-                )
-                job_time_buffer = st.slider(
-                    "Time buffer (minutes)",
-                    min_value=15, max_value=120, value=30, step=15,
-                    help="Time window around scheduled job"
-                )
-                
-                st.write("**Business Hours**")
-                business_start = st.time_input("Start time", value=datetime.strptime("07:00", "%H:%M").time())
-                business_end = st.time_input("End time", value=datetime.strptime("18:00", "%H:%M").time())
-                
-                # Simplified - automatically run all available detections
-                if st.session_state.fuel_data is not None:
-                    st.success("**🔍 Automatic Detection Enabled:**")
-                    if st.session_state.gps_data is not None:
-                        st.info("🚨 **Fuel + GPS**: Theft detection, location validation, MPG fraud, pattern analysis")
-                    else:
-                        st.info("⛽ **Fuel Only**: Enhanced theft detection, pattern analysis, volume anomalies")
+            # Skip complex audit parameters - AI handles everything automatically
+            if st.session_state.fuel_data is not None:
+                st.success("**🔍 AI-Powered Detection Ready:**")
+                if st.session_state.gps_data is not None:
+                    st.info("🚨 **Fuel + GPS**: Enhanced theft detection, location validation, pattern analysis")
+                else:
+                    st.info("⛽ **Fuel Only**: Enhanced theft detection, pattern analysis, volume anomalies")
             
             # Run audit button
             if st.button("🚀 Run Fleet Audit", type="primary", use_container_width=True):
@@ -514,22 +468,43 @@ def main():
                                 'consolidated_violations': violations,
                                 'financial_summary': {
                                     'total_fleet_loss': total_loss,
-                                    'vehicles_flagged': len(set(v.get('vehicle_id') for v in violations)),
+                                    'vehicles_flagged': len(set(v.get('vehicle_id', 'Unknown') for v in violations)),
                                     'weekly_fleet_estimate': total_loss * 52 / 12
                                 },
                                 'ai_summary': st.session_state.ai_summary
                             }
                         else:
-                            # No AI violations found
-                            audit_results = {
-                                'consolidated_violations': [],
-                                'financial_summary': {
-                                    'total_fleet_loss': 0,
-                                    'vehicles_flagged': 0,
-                                    'weekly_fleet_estimate': 0
-                                },
-                                'ai_summary': st.session_state.get('ai_summary', {})
-                            }
+                            # Run enhanced fuel analysis on AI-parsed data for violations
+                            if st.session_state.fuel_data is not None and len(st.session_state.fuel_data) > 0:
+                                from logic.enhanced_fuel_detector import EnhancedFuelDetector
+                                detector = EnhancedFuelDetector()
+                                fuel_violations = detector.detect_enhanced_fuel_theft(
+                                    st.session_state.fuel_data, 
+                                    st.session_state.gps_data if hasattr(st.session_state, 'gps_data') else None
+                                )
+                                
+                                total_loss = sum(v.get('estimated_loss', 50) for v in fuel_violations)
+                                
+                                audit_results = {
+                                    'consolidated_violations': fuel_violations,
+                                    'financial_summary': {
+                                        'total_fleet_loss': total_loss,
+                                        'vehicles_flagged': len(set(v.get('vehicle_id', 'Unknown') for v in fuel_violations)),
+                                        'weekly_fleet_estimate': total_loss * 52 / 12
+                                    },
+                                    'ai_summary': st.session_state.get('ai_summary', {})
+                                }
+                            else:
+                                # No data to analyze
+                                audit_results = {
+                                    'consolidated_violations': [],
+                                    'financial_summary': {
+                                        'total_fleet_loss': 0,
+                                        'vehicles_flagged': 0,
+                                        'weekly_fleet_estimate': 0
+                                    },
+                                    'ai_summary': st.session_state.get('ai_summary', {})
+                                }
                         
                         # Skip AI violation insights - keep it lightweight and fast
                         # AI is only used for CSV parsing, violations are detected by fast logic

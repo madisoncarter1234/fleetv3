@@ -10,7 +10,7 @@ class AIOnlyParser:
     def __init__(self, api_key: Optional[str] = None):
         self.client = Anthropic(api_key=api_key or os.getenv('ANTHROPIC_API_KEY'))
         self.primary_model = "claude-3-haiku-20240307"  # Fast & cheap
-        self.fallback_model = "claude-3-5-sonnet-20241022"  # Smart fallback
+        # HAIKU ONLY - no fallback to expensive Sonnet
     
     def parse_and_detect_violations(self, fuel_file_path: str, gps_file_path: str = None, job_file_path: str = None) -> Dict:
         """
@@ -97,7 +97,7 @@ RETURN FORMAT:
 
 Return complete JSON with ALL parsed data:"""
         
-        # Try Haiku first (fast & cheap)
+        # HAIKU ONLY - no expensive Sonnet fallback
         try:
             print("🚀 Using Claude Haiku for analysis...")
             response = self.client.messages.create(
@@ -111,44 +111,26 @@ Return complete JSON with ALL parsed data:"""
             result_text = response.content[0].text.strip()
             result = self._parse_ai_response(result_text)
             
-            # Validate Haiku result
-            if result and result.get('parsed_data') and len(result['parsed_data']) > 0:
-                print("✅ Haiku analysis successful!")
+            # Return Haiku result even if imperfect - no Sonnet fallback
+            if result and result.get('parsed_data'):
+                print("✅ Haiku analysis completed!")
                 return result
             else:
-                raise ValueError("Haiku returned empty or invalid result")
-                
-        except Exception as e:
-            print(f"⚠️ Haiku failed: {e}")
-            print("🎯 Falling back to Sonnet for complex analysis...")
-            
-            # Fallback to Sonnet for edge cases
-            try:
-                response = self.client.messages.create(
-                    model=self.fallback_model,
-                    max_tokens=4000,
-                    temperature=0.1,
-                    timeout=60.0,
-                    messages=[{"role": "user", "content": prompt}]
-                )
-                
-                result_text = response.content[0].text.strip()
-                result = self._parse_ai_response(result_text)
-                
-                if result:
-                    print("✅ Sonnet fallback successful!")
-                    return result
-                else:
-                    raise ValueError("Both Haiku and Sonnet failed")
-                    
-            except Exception as sonnet_error:
-                print(f"❌ Both AI models failed: {sonnet_error}")
+                print("⚠️ Haiku returned partial results - using what we got")
                 return {
-                    "error": f"Haiku: {e}, Sonnet: {sonnet_error}",
                     "parsed_data": [],
                     "violations": [],
                     "summary": {"total_transactions": 0, "violations_found": 0}
                 }
+                
+        except Exception as e:
+            print(f"❌ Haiku failed: {e}")
+            return {
+                "error": str(e),
+                "parsed_data": [],
+                "violations": [],
+                "summary": {"total_transactions": 0, "violations_found": 0}
+            }
     
     def _parse_ai_response(self, result_text: str) -> Dict:
         """Parse AI response and convert to usable format"""
