@@ -351,20 +351,18 @@ def display_demo_results(scenario_name, scenario_data):
                     st.write(f"**Estimated Loss:** ${violation['estimated_loss']:.2f}")
 
 def main():
-    # Sidebar with WORKING navigation buttons
+    # Clean sidebar navigation
     with st.sidebar:
-        st.markdown("## 🧭 Navigation")
-        st.markdown("---")
+        st.markdown("### 🧭 Navigation")
         
-        # WORKING navigation using st.switch_page
-        if st.button("🚛 PRODUCT PAGE", type="primary", use_container_width=True, key="nav_product"):
+        if st.button("🏠 Landing Page", type="secondary", use_container_width=True, key="nav_landing"):
+            st.rerun()  # Already on landing page
+            
+        if st.button("🚛 App (Product)", type="primary", use_container_width=True, key="nav_app"):
             st.switch_page("pages/1_Product.py")
             
-        if st.button("🔧 BACKUP PAGE", type="secondary", use_container_width=True, key="nav_backup"):
+        if st.button("🔧 Backup", type="secondary", use_container_width=True, key="nav_backup"):
             st.switch_page("pages/2_Backup.py")
-            
-        st.markdown("---")
-        st.markdown("**Current:** Landing Page")
     
     # Hero Section
     st.markdown("""

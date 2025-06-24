@@ -23,7 +23,7 @@ except ImportError:
 
 # Page config - this runs for each page
 st.set_page_config(
-    page_title="FleetAudit.io - Product",
+    page_title="FleetAudit.io - App",
     page_icon="🚛",
     layout="wide"
 )
@@ -629,25 +629,23 @@ def main():
     """Main app"""
     init_session_state()
     
-    # Sidebar navigation
+    # Clean sidebar navigation
     with st.sidebar:
-        st.markdown("## 🧭 Navigation")
-        st.markdown("---")
+        st.markdown("### 🧭 Navigation")
         
-        if st.button("🏠 LANDING PAGE", type="secondary", use_container_width=True, key="nav_home"):
+        if st.button("🏠 Landing Page", type="secondary", use_container_width=True, key="nav_landing"):
             st.switch_page("app.py")
             
-        if st.button("🔧 BACKUP PAGE", type="secondary", use_container_width=True, key="nav_backup"):
-            st.switch_page("pages/2_Backup.py")
+        if st.button("🚛 App (Product)", type="primary", use_container_width=True, key="nav_app"):
+            st.rerun()  # Already on app page
             
-        st.markdown("---")
-        st.markdown("**Current:** Product (Full Platform)")
-        st.markdown("*This is the WORKING fraud detection platform*")
+        if st.button("🔧 Backup", type="secondary", use_container_width=True, key="nav_backup"):
+            st.switch_page("pages/2_Backup.py")
     
     # Styled header
     st.markdown("""
     <div class="main-header">
-        <h1>🚛 FleetAudit.io - Product</h1>
+        <h1>🚛 FleetAudit.io - App</h1>
         <p>AI-Powered Fleet Fraud Detection & Audit Platform</p>
     </div>
     """, unsafe_allow_html=True)

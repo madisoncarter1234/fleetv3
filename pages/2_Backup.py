@@ -629,20 +629,18 @@ def main():
     """Main app"""
     init_session_state()
     
-    # Sidebar navigation
+    # Clean sidebar navigation
     with st.sidebar:
-        st.markdown("## 🧭 Navigation")
-        st.markdown("---")
+        st.markdown("### 🧭 Navigation")
         
-        if st.button("🏠 LANDING PAGE", type="secondary", use_container_width=True, key="nav_home"):
+        if st.button("🏠 Landing Page", type="secondary", use_container_width=True, key="nav_landing"):
             st.switch_page("app.py")
             
-        if st.button("🚛 PRODUCT PAGE", type="primary", use_container_width=True, key="nav_product"):
+        if st.button("🚛 App (Product)", type="secondary", use_container_width=True, key="nav_app"):
             st.switch_page("pages/1_Product.py")
             
-        st.markdown("---")
-        st.markdown("**Current:** Backup (Full Platform)")
-        st.markdown("*This is a BACKUP of the working fraud detection platform*")
+        if st.button("🔧 Backup", type="primary", use_container_width=True, key="nav_backup"):
+            st.rerun()  # Already on backup page
     
     # Styled header
     st.markdown("""
