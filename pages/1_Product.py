@@ -632,11 +632,11 @@ def main():
     """Main app"""
     init_session_state()
     
-    # Clean sidebar navigation
+    # Simple sidebar navigation
     with st.sidebar:
-        st.page_link("app.py", label="🏠 Landing Page")
-        st.markdown("🚛 **App**")
-        st.page_link("pages/2_Backup.py", label="🔧 Backup")
+        st.markdown("🏠 Landing Page")
+        st.markdown("**🚛 App**")
+        st.markdown("🔧 Backup")
     
     # Styled header
     st.markdown("""

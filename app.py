@@ -374,11 +374,11 @@ def display_demo_results(scenario_name, scenario_data):
                     st.write(f"**Estimated Loss:** ${violation['estimated_loss']:.2f}")
 
 def main():
-    # Clean sidebar navigation
+    # Simple sidebar navigation
     with st.sidebar:
-        st.markdown("🏠 **Landing Page**")
-        st.page_link("pages/1_Product.py", label="🚛 App")
-        st.page_link("pages/2_Backup.py", label="🔧 Backup")
+        st.markdown("**🏠 Landing Page**")
+        st.markdown("🚛 App")
+        st.markdown("🔧 Backup")
     
     # Hero Section
     st.markdown("""
