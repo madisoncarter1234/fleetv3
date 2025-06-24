@@ -8,7 +8,21 @@ class AIOnlyParser:
     """100% AI-powered parser - optimized for cost and performance"""
     
     def __init__(self, api_key: Optional[str] = None):
-        self.client = Anthropic(api_key=api_key or os.getenv('ANTHROPIC_API_KEY'))
+        # Try multiple ways to get API key for Streamlit compatibility
+        if api_key:
+            self.client = Anthropic(api_key=api_key)
+        elif os.getenv('ANTHROPIC_API_KEY'):
+            self.client = Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
+        else:
+            # Try Streamlit secrets if available
+            try:
+                import streamlit as st
+                if hasattr(st, 'secrets') and 'ANTHROPIC_API_KEY' in st.secrets:
+                    self.client = Anthropic(api_key=st.secrets['ANTHROPIC_API_KEY'])
+                else:
+                    self.client = Anthropic()  # Let Anthropic handle auth
+            except:
+                self.client = Anthropic()  # Let Anthropic handle auth
         self.primary_model = "claude-3-haiku-20240307"  # Fast & cheap
         # HAIKU ONLY - no fallback to expensive Sonnet
     
@@ -111,23 +125,41 @@ Return complete JSON with ALL parsed data:"""
             result_text = response.content[0].text.strip()
             result = self._parse_ai_response(result_text)
             
-            # Return Haiku result even if imperfect - no Sonnet fallback
-            if result and result.get('parsed_data'):
+            # Return Haiku result - always create DataFrame for app compatibility
+            if result:
                 print("✅ Haiku analysis completed!")
+                # Ensure we always have a dataframe for app.py compatibility
+                if result.get('parsed_data'):
+                    df = pd.DataFrame(result['parsed_data'])
+                    if 'timestamp' in df.columns:
+                        df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
+                    result['dataframe'] = df
+                else:
+                    # Empty but valid result
+                    result['dataframe'] = pd.DataFrame()
+                    result['parsed_data'] = []
                 return result
             else:
-                print("⚠️ Haiku returned partial results - using what we got")
+                print("⚠️ Haiku returned invalid JSON - creating empty result")
                 return {
                     "parsed_data": [],
+                    "dataframe": pd.DataFrame(),
                     "violations": [],
                     "summary": {"total_transactions": 0, "violations_found": 0}
                 }
                 
         except Exception as e:
-            print(f"❌ Haiku failed: {e}")
+            error_msg = str(e)
+            if "authentication" in error_msg.lower() or "api_key" in error_msg.lower():
+                print(f"❌ Authentication failed: {e}")
+                error_msg = "API key not configured. Please set ANTHROPIC_API_KEY environment variable."
+            else:
+                print(f"❌ Haiku failed: {e}")
+            
             return {
-                "error": str(e),
+                "error": error_msg,
                 "parsed_data": [],
+                "dataframe": pd.DataFrame(),
                 "violations": [],
                 "summary": {"total_transactions": 0, "violations_found": 0}
             }
@@ -143,12 +175,8 @@ Return complete JSON with ALL parsed data:"""
             
             result = json.loads(result_text)
             
-            # Convert parsed_data to DataFrame
-            if result.get('parsed_data'):
-                df = pd.DataFrame(result['parsed_data'])
-                if 'timestamp' in df.columns:
-                    df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
-                result['dataframe'] = df
+            # Always ensure dataframe exists (moved to main function for consistency)
+            # This is handled in the main parse function now
             
             return result
             

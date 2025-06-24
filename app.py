@@ -257,14 +257,18 @@ def main():
                     
                     ai_result = ai_parser.parse_and_detect_violations(tmp_path, gps_file_path, job_file_path)
                     
-                    if 'dataframe' in ai_result and len(ai_result['dataframe']) > 0:
+                    if 'dataframe' in ai_result:
                         fuel_data = ai_result['dataframe']
                         # Store AI violations for display
                         st.session_state.ai_violations = ai_result.get('violations', [])
                         st.session_state.ai_summary = ai_result.get('summary', {})
+                        
+                        if len(fuel_data) == 0:
+                            st.warning("⚠️ AI parsed the file but found no valid fuel transactions. Please check your CSV format.")
+                        
                     else:
                         # AI failed completely - show error
-                        st.error("❌ AI parsing failed. Please check your CSV format.")
+                        st.error(f"❌ AI parsing failed: {ai_result.get('error', 'Unknown error')}. Please check your CSV format.")
                         return
                     
                     st.session_state.fuel_data = fuel_data
