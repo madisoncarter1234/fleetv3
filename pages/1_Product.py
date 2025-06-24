@@ -634,9 +634,13 @@ def main():
     
     # Simple sidebar navigation
     with st.sidebar:
-        st.markdown("🏠 Landing Page")
+        # Landing page link
+        st.markdown('<a href="/" target="_self">🏠 Landing Page</a>', unsafe_allow_html=True)
+        
         st.markdown("**🚛 App**")
-        st.markdown("🔧 Backup")
+        
+        # Backup link
+        st.markdown('<a href="../2_Backup" target="_self">🔧 Backup</a>', unsafe_allow_html=True)
     
     # Styled header
     st.markdown("""

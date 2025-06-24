@@ -377,8 +377,12 @@ def main():
     # Simple sidebar navigation
     with st.sidebar:
         st.markdown("**🏠 Landing Page**")
-        st.markdown("🚛 App")
-        st.markdown("🔧 Backup")
+        
+        # App link - using HTML link to the page
+        st.markdown('<a href="1_Product" target="_self">🚛 App</a>', unsafe_allow_html=True)
+        
+        # Backup link - using HTML link to the page  
+        st.markdown('<a href="2_Backup" target="_self">🔧 Backup</a>', unsafe_allow_html=True)
     
     # Hero Section
     st.markdown("""
