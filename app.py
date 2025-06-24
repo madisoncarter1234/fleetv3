@@ -356,16 +356,12 @@ def main():
         st.markdown("## 🧭 Navigation")
         st.markdown("---")
         
-        # WORKING buttons that actually navigate
+        # WORKING navigation using st.switch_page
         if st.button("🚛 PRODUCT PAGE", type="primary", use_container_width=True, key="nav_product"):
-            # Create a link to the product page
-            st.markdown('<meta http-equiv="refresh" content="0; url=./1_Product">', unsafe_allow_html=True)
-            st.rerun()
+            st.switch_page("pages/1_Product.py")
             
         if st.button("🔧 BACKUP PAGE", type="secondary", use_container_width=True, key="nav_backup"):
-            # Create a link to the backup page  
-            st.markdown('<meta http-equiv="refresh" content="0; url=./2_Backup">', unsafe_allow_html=True)
-            st.rerun()
+            st.switch_page("pages/2_Backup.py")
             
         st.markdown("---")
         st.markdown("**Current:** Landing Page")
@@ -461,15 +457,9 @@ def main():
         </div>
         """, unsafe_allow_html=True)
         
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("🚀 Start Free Trial", type="primary", use_container_width=True):
-                st.balloons()
-                st.success("🎉 Ready to start your free trial! Subscription system coming soon.")
-        with col2:
-            if st.button("🚛 Access Product Page", type="primary", use_container_width=True):
-                st.markdown('<meta http-equiv="refresh" content="0; url=./1_Product">', unsafe_allow_html=True)
-                st.rerun()
+        if st.button("🚀 Start Free Trial", type="primary", use_container_width=True):
+            st.balloons()
+            st.success("🎉 Ready to start your free trial! Subscription system coming soon.")
     
     # Call to Action
     st.markdown("---")

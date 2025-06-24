@@ -23,10 +23,9 @@ except ImportError:
 
 # Page config
 st.set_page_config(
-    page_title="FleetAudit.io - Fleet Fraud Detection",
+    page_title="FleetAudit.io - Backup",
     page_icon="🚛",
-    layout="wide",
-    initial_sidebar_state="collapsed"
+    layout="wide"
 )
 
 # Custom CSS for better styling
@@ -626,15 +625,82 @@ def export_reports():
         if st.button("📧 Send Email Report", use_container_width=True) and recipient_email:
             st.info("🔧 Email functionality coming soon - use PDF download for now")
 
-# Redirect to landing page
-st.markdown("""
-<div style="text-align: center; padding: 4rem;">
-    <h1>🚛 FleetAudit.io</h1>
-    <p>This page has moved to our new landing page.</p>
-    <p>Please use the sidebar navigation to access:</p>
-    <ul style="text-align: left; max-width: 400px; margin: 2rem auto;">
-        <li><strong>Landing Page</strong> - Try our demo and see pricing</li>
-        <li><strong>🚛 Product</strong> - Full fraud detection platform (subscribers only)</li>
-    </ul>
-</div>
-""", unsafe_allow_html=True)
+def main():
+    """Main app"""
+    init_session_state()
+    
+    # Sidebar navigation
+    with st.sidebar:
+        st.markdown("## 🧭 Navigation")
+        st.markdown("---")
+        
+        if st.button("🏠 LANDING PAGE", type="secondary", use_container_width=True, key="nav_home"):
+            st.switch_page("app.py")
+            
+        if st.button("🚛 PRODUCT PAGE", type="primary", use_container_width=True, key="nav_product"):
+            st.switch_page("pages/1_Product.py")
+            
+        st.markdown("---")
+        st.markdown("**Current:** Backup (Full Platform)")
+        st.markdown("*This is a BACKUP of the working fraud detection platform*")
+    
+    # Styled header
+    st.markdown("""
+    <div class="main-header">
+        <h1>🚛 FleetAudit.io - Backup</h1>
+        <p>AI-Powered Fleet Fraud Detection & Audit Platform (Backup Version)</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Upload section
+    st.markdown("## 📁 Data Upload")
+    st.markdown("Upload your fleet data files to begin fraud detection analysis.")
+    
+    col1, col2, col3 = st.columns(3, gap="medium")
+    
+    with col1:
+        upload_fuel_data()
+    
+    with col2:
+        upload_gps_data()
+        
+    with col3:
+        upload_job_data()
+    
+    st.markdown("---")
+    
+    # Fraud detection
+    detect_fraud()
+    
+    # Report export section
+    if st.session_state.fraud_results:
+        st.divider()
+        export_reports()
+    
+    # Show current data status
+    st.markdown("---")
+    st.markdown("### 📊 Data Status")
+    st.markdown("Overview of uploaded data and system readiness.")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.session_state.fuel_data is not None:
+            st.metric("Fuel Records", len(st.session_state.fuel_data))
+        else:
+            st.metric("Fuel Records", "Not loaded")
+    
+    with col2:
+        if st.session_state.gps_data is not None:
+            st.metric("GPS Records", len(st.session_state.gps_data))
+        else:
+            st.metric("GPS Records", "Not loaded")
+            
+    with col3:
+        if st.session_state.job_data is not None:
+            st.metric("Job Records", len(st.session_state.job_data))
+        else:
+            st.metric("Job Records", "Not loaded")
+
+# Run the main function for multipage apps
+main()

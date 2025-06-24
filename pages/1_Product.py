@@ -635,12 +635,10 @@ def main():
         st.markdown("---")
         
         if st.button("🏠 LANDING PAGE", type="secondary", use_container_width=True, key="nav_home"):
-            st.markdown('<meta http-equiv="refresh" content="0; url=./">', unsafe_allow_html=True)
-            st.rerun()
+            st.switch_page("app.py")
             
         if st.button("🔧 BACKUP PAGE", type="secondary", use_container_width=True, key="nav_backup"):
-            st.markdown('<meta http-equiv="refresh" content="0; url=./2_Backup">', unsafe_allow_html=True)
-            st.rerun()
+            st.switch_page("pages/2_Backup.py")
             
         st.markdown("---")
         st.markdown("**Current:** Product (Full Platform)")
