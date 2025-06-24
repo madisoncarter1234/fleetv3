@@ -43,20 +43,16 @@ class AIOnlyParser:
         fuel_csv_lines = fuel_csv_content.split('\n')
         print(f"Processing fuel file with {len(fuel_csv_lines)} rows")
         
-        # Two-stage approach: Parse first, then detect violations
-        prompt = f"""Parse this fuel CSV into standardized format. Return ONLY valid JSON.
+        # Simple, direct prompt that works
+        prompt = f"""Parse fuel CSV and detect violations. Return JSON only.
 
-CSV:
 {fuel_csv_content}
 
-Return this exact format:
+Extract ALL rows into this format:
 {{
-  "parsed_data": [
-    {{"timestamp": "YYYY-MM-DD HH:MM:SS", "location": "station", "gallons": 25.5, "vehicle_id": "TRUCK001", "amount": 75.25}}
-  ]
-}}
-
-Include ALL rows. No text outside JSON."""
+  "parsed_data": [{{"timestamp":"YYYY-MM-DD HH:MM:SS","location":"station","gallons":25.5,"vehicle_id":"TRUCK001"}}],
+  "violations": [{{"type":"after_hours","vehicle_id":"TRUCK001","timestamp":"2024-06-16 00:26:00","description":"Late night fuel purchase"}}]
+}}"""
         
         # Skip GPS/job for now - focus on just getting fuel parsing to work
         # TODO: Add violation detection in separate step
