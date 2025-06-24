@@ -1,25 +1,8 @@
 import streamlit as st
 import pandas as pd
-import tempfile
-import os
-from datetime import datetime
-from anthropic import Anthropic
-# Optional PDF generation imports
-try:
-    from reportlab.lib.pagesizes import letter
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-    from reportlab.lib.styles import getSampleStyleSheet
-    from reportlab.lib import colors
-    REPORTLAB_AVAILABLE = True
-except ImportError:
-    REPORTLAB_AVAILABLE = False
-    # Create dummy classes to prevent errors
-    letter = None
-    SimpleDocTemplate = None
-    Paragraph = None
-    Spacer = None
-    Table = None
-    TableStyle = None
+import json
+from datetime import datetime, timedelta
+import random
 
 # Page config
 st.set_page_config(
@@ -29,48 +12,93 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS for better styling
+# Custom CSS for landing page styling
 st.markdown("""
 <style>
     /* Main theme colors */
     .main {
-        padding-top: 2rem;
+        padding-top: 1rem;
     }
     
-    /* Header styling */
-    .main-header {
-        background: linear-gradient(90deg, #1f4e79 0%, #2d5aa0 100%);
-        padding: 2rem;
-        border-radius: 10px;
-        margin-bottom: 2rem;
+    /* Hero section styling */
+    .hero-section {
+        background: linear-gradient(135deg, #1f4e79 0%, #2d5aa0 50%, #3d6bb5 100%);
+        padding: 4rem 2rem;
+        border-radius: 15px;
+        margin-bottom: 3rem;
         text-align: center;
         color: white;
+        box-shadow: 0 8px 32px rgba(31, 78, 121, 0.3);
     }
     
-    .main-header h1 {
+    .hero-section h1 {
         color: white !important;
-        margin-bottom: 0.5rem;
-        font-size: 2.5rem;
-        font-weight: 700;
+        margin-bottom: 1rem;
+        font-size: 3.5rem;
+        font-weight: 800;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     }
     
-    .main-header p {
+    .hero-section h2 {
         color: #e8f4f8 !important;
-        font-size: 1.2rem;
-        margin-bottom: 0;
+        font-size: 1.4rem;
+        margin-bottom: 2rem;
+        font-weight: 400;
     }
     
-    /* Upload section styling */
-    .upload-section {
-        background: #f8f9fa;
-        padding: 1.5rem;
-        border-radius: 8px;
+    .hero-section p {
+        color: #b8dae8 !important;
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    /* Feature cards */
+    .feature-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
         border: 1px solid #e9ecef;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    
+    .feature-card h3 {
+        color: #1f4e79;
+        margin-bottom: 1rem;
+        font-size: 1.3rem;
+    }
+    
+    /* Demo section */
+    .demo-section {
+        background: #f8f9fa;
+        padding: 3rem 2rem;
+        border-radius: 12px;
+        margin: 2rem 0;
+        border: 2px solid #e9ecef;
+    }
+    
+    .demo-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .demo-header h2 {
+        color: #1f4e79;
+        font-size: 2.2rem;
         margin-bottom: 1rem;
     }
     
-    /* Violation card styling */
-    .violation-card {
+    /* Violation cards for demo */
+    .violation-demo {
         background: #fff5f5;
         border: 1px solid #fed7d7;
         border-radius: 8px;
@@ -79,76 +107,70 @@ st.markdown("""
         border-left: 4px solid #e53e3e;
     }
     
-    .violation-card.high {
+    .violation-demo.high {
         border-left-color: #e53e3e;
         background: #fff5f5;
     }
     
-    .violation-card.medium {
+    .violation-demo.medium {
         border-left-color: #dd6b20;
         background: #fffbf0;
     }
     
-    .violation-card.low {
-        border-left-color: #ecc94b;
-        background: #fffff0;
+    /* CTA Button */
+    .cta-button {
+        background: linear-gradient(90deg, #e53e3e 0%, #c53030 100%);
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 8px;
+        border: none;
+        font-size: 1.2rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+        margin: 1rem;
     }
     
-    /* Success styling */
-    .success-card {
-        background: #f0fff4;
-        border: 1px solid #c6f6d5;
-        border-radius: 8px;
-        padding: 1.5rem;
+    .cta-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(229, 62, 62, 0.4);
+    }
+    
+    /* Pricing preview */
+    .pricing-preview {
+        background: white;
+        border: 2px solid #2d5aa0;
+        border-radius: 12px;
+        padding: 2rem;
         text-align: center;
-        border-left: 4px solid #38a169;
+        margin: 2rem 0;
+    }
+    
+    .price {
+        font-size: 3rem;
+        font-weight: 800;
+        color: #1f4e79;
+        margin: 1rem 0;
     }
     
     /* Button styling */
     .stButton > button {
         background: linear-gradient(90deg, #1f4e79 0%, #2d5aa0 100%);
         color: white;
-        border-radius: 6px;
+        border-radius: 8px;
         border: none;
-        padding: 0.5rem 1rem;
+        padding: 0.75rem 2rem;
         font-weight: 600;
+        font-size: 1.1rem;
         transition: all 0.3s ease;
+        width: 100%;
     }
     
     .stButton > button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(31, 78, 121, 0.3);
-    }
-    
-    /* Metric styling */
-    [data-testid="metric-container"] {
-        background: white;
-        border: 1px solid #e9ecef;
-        padding: 1rem;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    /* Upload widget styling */
-    .uploadedFile {
-        border: 2px dashed #2d5aa0;
-        border-radius: 8px;
-        padding: 1rem;
-        background: #f8f9fa;
-    }
-    
-    /* Divider styling */
-    hr {
-        margin: 2rem 0;
-        border: none;
-        height: 2px;
-        background: linear-gradient(90deg, transparent 0%, #2d5aa0 50%, transparent 100%);
-    }
-    
-    /* Expander styling */
-    .streamlit-expanderHeader {
-        font-weight: 600;
-        font-size: 1.1rem;
+        box-shadow: 0 6px 20px rgba(31, 78, 121, 0.3);
     }
     
     /* Remove Streamlit branding */
@@ -158,483 +180,296 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-def init_session_state():
-    """Initialize session state"""
-    if 'fuel_data' not in st.session_state:
-        st.session_state.fuel_data = None
-    if 'gps_data' not in st.session_state:
-        st.session_state.gps_data = None
-    if 'job_data' not in st.session_state:
-        st.session_state.job_data = None
-    if 'fraud_results' not in st.session_state:
-        st.session_state.fraud_results = None
-
-def upload_fuel_data():
-    """Simple pandas-based fuel data upload"""
-    st.markdown("### ⛽ Fuel Data Upload")
-    with st.container():
-        fuel_file = st.file_uploader(
-            "Upload Fuel CSV", 
-            type=['csv'], 
-            key="fuel_upload",
-            help="Upload fuel card transaction data"
-        )
+def get_demo_data():
+    """Generate realistic demo data for the fleet audit"""
     
-    if fuel_file is not None:
-        try:
-            # Simple pandas parsing
-            fuel_df = pd.read_csv(fuel_file)
-            
-            # Basic column standardization
-            column_mapping = {
-                'Transaction Date': 'date',
-                'Date': 'date',
-                'Transaction Time': 'time', 
-                'Time': 'time',
-                'Site Name': 'location',
-                'Merchant Name': 'location',
-                'Location': 'location',
-                'Gallons': 'gallons',
-                'Fuel Quantity': 'gallons',
-                'Vehicle Number': 'vehicle_id',
-                'Vehicle': 'vehicle_id',
-                'Amount': 'amount',
-                'Total Cost': 'amount',
-                'Driver Name': 'driver_name',
-                'Card Number': 'card_number',
-                'Card': 'card_number',
-                'Fuel Card': 'card_number',
-                'Card Last 4': 'card_last_4',
-                'Last 4': 'card_last_4',
-                'card_last4': 'card_last_4'
+    # Sample scenarios
+    scenarios = {
+        "ABC Logistics": {
+            "description": "12-vehicle delivery fleet with multiple policy violations",
+            "vehicles": 12,
+            "violations": [
+                {
+                    "type": "shared_card_use",
+                    "card_last_4": "4455",
+                    "vehicles_involved": ["VAN-003", "TRUCK-007"],
+                    "drivers_involved": ["Mike Chen", "Sarah Wilson"],
+                    "time_span_minutes": 25,
+                    "description": "Same fuel card (****4455) used by different drivers within 25 minutes",
+                    "severity": "high",
+                    "estimated_loss": 187.50
+                },
+                {
+                    "type": "after_hours",
+                    "vehicle_id": "VAN-005",
+                    "driver_name": "Carlos Rodriguez", 
+                    "timestamp": "2024-08-15 02:47:00",
+                    "location": "Shell Station - Interstate 85",
+                    "card_last_4": "4455",
+                    "description": "Fuel purchase at 2:47 AM on weekend outside business hours",
+                    "severity": "high",
+                    "estimated_loss": 89.25
+                },
+                {
+                    "type": "excessive_amount",
+                    "vehicle_id": "TRUCK-003",
+                    "driver_name": "David Kim",
+                    "timestamp": "2024-08-12 14:22:00", 
+                    "location": "BP Station - Highway 75",
+                    "card_last_4": "7891",
+                    "description": "Purchased 67 gallons (normal capacity: 35 gallons)",
+                    "severity": "medium",
+                    "estimated_loss": 125.00
+                },
+                {
+                    "type": "ghost_job",
+                    "job_id": "ATL-2024-0815",
+                    "driver_name": "Mike Chen",
+                    "vehicle_id": "VAN-003",
+                    "scheduled_time": "2024-08-15 14:00:00",
+                    "address": "Buford, GA",
+                    "description": "Scheduled delivery with no GPS activity at job location",
+                    "severity": "high", 
+                    "estimated_loss": 150.00
+                }
+            ],
+            "summary": {
+                "total_violations": 4,
+                "total_estimated_loss": 551.75,
+                "high_risk_vehicles": ["VAN-003", "VAN-005", "TRUCK-003"]
             }
-            
-            # Rename columns
-            for old_col, new_col in column_mapping.items():
-                if old_col in fuel_df.columns:
-                    fuel_df = fuel_df.rename(columns={old_col: new_col})
-            
-            # Create timestamp from date + time if separate
-            if 'date' in fuel_df.columns and 'time' in fuel_df.columns:
-                fuel_df['timestamp'] = pd.to_datetime(
-                    fuel_df['date'].astype(str) + ' ' + fuel_df['time'].astype(str), 
-                    errors='coerce'
-                )
-            elif 'date' in fuel_df.columns:
-                fuel_df['timestamp'] = pd.to_datetime(fuel_df['date'], errors='coerce')
-            
-            # Extract last 4 digits from card number if we have full card number
-            if 'card_number' in fuel_df.columns and 'card_last_4' not in fuel_df.columns:
-                fuel_df['card_last_4'] = fuel_df['card_number'].astype(str).str[-4:]
-            elif 'card_last_4' not in fuel_df.columns and 'card_number' not in fuel_df.columns:
-                # Try to find any column that might contain card info
-                card_columns = [col for col in fuel_df.columns if 'card' in col.lower() or 'last' in col.lower()]
-                if card_columns:
-                    fuel_df['card_last_4'] = fuel_df[card_columns[0]].astype(str).str[-4:]
-            
-            st.session_state.fuel_data = fuel_df
-            st.success(f"✅ Fuel data loaded: {len(fuel_df)} records")
-            
-            # Show preview
-            st.write("**Preview:**")
-            st.dataframe(fuel_df.head(), use_container_width=True)
-            
-            
-        except Exception as e:
-            st.error(f"❌ Error loading fuel data: {str(e)}")
-
-def upload_gps_data():
-    """Simple pandas-based GPS data upload"""
-    st.markdown("### 🗺️ GPS Data Upload")
-    with st.container():
-        gps_file = st.file_uploader(
-            "Upload GPS CSV", 
-            type=['csv'], 
-            key="gps_upload",
-            help="Upload GPS tracking data"
-        )
+        },
+        "Metro Delivery": {
+            "description": "6-vehicle urban delivery service with moderate violations",
+            "vehicles": 6,
+            "violations": [
+                {
+                    "type": "rapid_purchases",
+                    "vehicle_id": "VAN-002",
+                    "driver_name": "Lisa Johnson",
+                    "timestamp": "2024-08-10 16:45:00",
+                    "location": "Exxon Station - Downtown",
+                    "card_last_4": "3344", 
+                    "description": "Two fuel purchases within 45 minutes at different locations",
+                    "severity": "medium",
+                    "estimated_loss": 95.50
+                },
+                {
+                    "type": "personal_use",
+                    "vehicle_id": "TRUCK-001", 
+                    "driver_name": "James Wilson",
+                    "timestamp": "2024-08-11 19:30:00",
+                    "location": "Shell Station - Residential Area",
+                    "card_last_4": "2233",
+                    "description": "Weekend fuel purchase in residential area during off-hours",
+                    "severity": "medium",
+                    "estimated_loss": 67.25
+                }
+            ],
+            "summary": {
+                "total_violations": 2,
+                "total_estimated_loss": 162.75,
+                "high_risk_vehicles": ["VAN-002", "TRUCK-001"]
+            }
+        },
+        "Clean Fleet Co": {
+            "description": "8-vehicle service fleet with excellent compliance record",
+            "vehicles": 8,
+            "violations": [
+                {
+                    "type": "minor_deviation",
+                    "vehicle_id": "VAN-001",
+                    "driver_name": "Jennifer Adams",
+                    "timestamp": "2024-08-09 18:15:00",
+                    "location": "BP Station - Route 285",
+                    "card_last_4": "5566",
+                    "description": "Fuel purchase 15 minutes after official end of shift",
+                    "severity": "low",
+                    "estimated_loss": 12.50
+                }
+            ],
+            "summary": {
+                "total_violations": 1,
+                "total_estimated_loss": 12.50,
+                "high_risk_vehicles": []
+            }
+        }
+    }
     
-    if gps_file is not None:
-        try:
-            gps_df = pd.read_csv(gps_file)
-            
-            # Basic standardization
-            if 'Timestamp' in gps_df.columns:
-                gps_df['timestamp'] = pd.to_datetime(gps_df['Timestamp'], errors='coerce')
-            elif 'Date' in gps_df.columns:
-                gps_df['timestamp'] = pd.to_datetime(gps_df['Date'], errors='coerce')
-            
-            st.session_state.gps_data = gps_df
-            st.success(f"✅ GPS data loaded: {len(gps_df)} records")
-            
-            # Show preview
-            st.write("**Preview:**")
-            st.dataframe(gps_df.head(), use_container_width=True)
-            
-        except Exception as e:
-            st.error(f"❌ Error loading GPS data: {str(e)}")
+    return scenarios
 
-def upload_job_data():
-    """Simple pandas-based job data upload"""
-    st.markdown("### 📋 Job Data Upload")
-    with st.container():
-        job_file = st.file_uploader(
-            "Upload Job CSV", 
-            type=['csv'], 
-            key="job_upload",
-            help="Upload job scheduling data"
-        )
+def display_demo_results(scenario_name, scenario_data):
+    """Display demo results that look like real fraud detection output"""
     
-    if job_file is not None:
-        try:
-            job_df = pd.read_csv(job_file)
-            
-            # Basic standardization
-            if 'Scheduled Time' in job_df.columns:
-                job_df['timestamp'] = pd.to_datetime(job_df['Scheduled Time'], errors='coerce')
-            elif 'Date' in job_df.columns:
-                job_df['timestamp'] = pd.to_datetime(job_df['Date'], errors='coerce')
-                
-            st.session_state.job_data = job_df
-            st.success(f"✅ Job data loaded: {len(job_df)} records")
-            
-            # Show preview
-            st.write("**Preview:**")
-            st.dataframe(job_df.head(), use_container_width=True)
-            
-        except Exception as e:
-            st.error(f"❌ Error loading job data: {str(e)}")
-
-def detect_fraud():
-    """Claude Haiku-only fraud detection"""
-    st.markdown("### 🚨 Fraud Detection")
-    st.markdown("Upload your fleet data above, then click the button below to analyze for potential fraud and policy violations.")
+    violations = scenario_data["violations"]
+    summary = scenario_data["summary"]
+    
+    # Summary metrics
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("🚨 Violations Found", len(violations), delta=f"{len(violations)} issues")
+    with col2:
+        total_loss = summary.get('total_estimated_loss', 0)
+        st.metric("💰 Estimated Loss", f"${total_loss:.2f}", delta=f"-${total_loss:.2f}")
+    with col3:
+        high_risk = len([v for v in violations if v.get('severity') == 'high'])
+        st.metric("⚠️ High Risk", high_risk, delta=f"{high_risk} critical")
+    
     st.markdown("---")
     
-    if st.session_state.fuel_data is None:
-        st.warning("⚠️ Please upload fuel data first")
-        return
-    
-    if st.button("🔍 Detect Fraud", type="primary", use_container_width=True):
-        with st.spinner("Analyzing data for fraud with Claude Haiku..."):
-            try:
-                # Initialize Claude Haiku
-                client = Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
-                
-                # Prepare data for analysis
-                fuel_csv = st.session_state.fuel_data.to_csv(index=False)
-                
-                # Add GPS data if available
-                analysis_data = f"FUEL DATA:\n{fuel_csv}\n"
-                
-                if st.session_state.gps_data is not None:
-                    gps_csv = st.session_state.gps_data.to_csv(index=False)
-                    analysis_data += f"\nGPS DATA:\n{gps_csv}\n"
-                
-                if st.session_state.job_data is not None:
-                    job_csv = st.session_state.job_data.to_csv(index=False)
-                    analysis_data += f"\nJOB DATA:\n{job_csv}\n"
-                
-                # Simple, direct prompt
-                prompt = f"""Analyze this fleet data for fraud and theft. Return JSON only.
+    # Display violations
+    for violation in violations:
+        if violation.get('type') == 'shared_card_use':
+            card_info = f"Card ****{violation.get('card_last_4', 'Unknown')}"
+            vehicles = ', '.join(violation.get('vehicles_involved', []))
+            with st.expander(f"**Shared Card Use** - {card_info} ({vehicles})"):
+                st.write(f"**Card Last 4:** ****{violation.get('card_last_4', 'Unknown')}")
+                st.write(f"**Vehicles Involved:** {', '.join(violation.get('vehicles_involved', []))}")
+                st.write(f"**Drivers Involved:** {', '.join(violation.get('drivers_involved', []))}")
+                st.write(f"**Time Span:** {violation.get('time_span_minutes', 'Unknown')} minutes")
+                st.write(f"**Description:** {violation.get('description', 'No description')}")
+                st.write(f"**Severity:** {violation.get('severity', 'Unknown').upper()}")
+                if violation.get('estimated_loss'):
+                    st.write(f"**Estimated Loss:** ${violation['estimated_loss']:.2f}")
+        else:
+            # Handle regular violations
+            driver_info = f"{violation.get('driver_name', 'Unknown Driver')} ({violation.get('vehicle_id', 'Unknown Vehicle')})"
+            violation_title = violation.get('type', 'Unknown').replace('_', ' ').title()
+            with st.expander(f"**{violation_title}** - {driver_info}"):
+                st.write(f"**Driver:** {violation.get('driver_name', 'Unknown')}")
+                st.write(f"**Vehicle:** {violation.get('vehicle_id', 'Unknown')}")
+                st.write(f"**Time:** {violation.get('timestamp', 'Unknown')}")
+                if violation.get('location'):
+                    st.write(f"**Location:** {violation.get('location', 'Unknown')}")
+                if violation.get('address'):
+                    st.write(f"**Job Address:** {violation.get('address', 'Unknown')}")
+                if violation.get('card_last_4'):
+                    st.write(f"**Card Used:** ****{violation['card_last_4']}")
+                st.write(f"**Description:** {violation.get('description', 'No description')}")
+                st.write(f"**Severity:** {violation.get('severity', 'Unknown').upper()}")
+                if violation.get('estimated_loss'):
+                    st.write(f"**Estimated Loss:** ${violation['estimated_loss']:.2f}")
 
-{analysis_data}
-
-Find these fraud types:
-- After-hours fuel purchases (outside 7AM-6PM)
-- Ghost jobs (jobs scheduled but no GPS/fuel activity at location)
-- Fuel without GPS at location  
-- Excessive fuel amounts (>25 gallons for vans, >50 for trucks)
-- Rapid consecutive purchases (multiple fills within 2 hours)
-- Personal use patterns (weekend/holiday activity)
-- Jobs with no vehicle presence (cross-check GPS and fuel data)
-- SHARED CARD USE: Same card number (last 4 digits) used by different drivers/vehicles within 60 minutes
-
-CRITICAL SHARED CARD DETECTION:
-1. Look for identical card numbers or last 4 digits used across different vehicles within 60 minutes
-2. Flag even same-vehicle multiple uses within 60 minutes as suspicious
-3. Include ALL transactions in the shared_card_use violation with exact timestamps
-4. Calculate time_span_minutes between first and last use
-
-IMPORTANT: For ALL fuel-related violations, include the "card_last_4" field with the last 4 digits of the fuel card used.
-
-Return JSON:
-{{
-  "violations": [
-    {{
-      "type": "after_hours",
-      "vehicle_id": "VAN-004", 
-      "driver_name": "Diana",
-      "timestamp": "2024-06-16 02:00:00",
-      "location": "Shell Station",
-      "card_last_4": "5678",
-      "description": "Fuel purchase at 2 AM outside business hours",
-      "severity": "high",
-      "estimated_loss": 75.50
-    }},
-    {{
-      "type": "shared_card_use",
-      "card_last_4": "1234",
-      "vehicles_involved": ["VAN-001", "TRUCK-002"],
-      "drivers_involved": ["John Smith", "Mike Jones"],
-      "transactions": [
-        {{"timestamp": "2024-06-16 14:15:00", "vehicle_id": "VAN-001", "driver_name": "John Smith", "location": "BP Station"}},
-        {{"timestamp": "2024-06-16 14:45:00", "vehicle_id": "TRUCK-002", "driver_name": "Mike Jones", "location": "Shell Station"}}
-      ],
-      "time_span_minutes": 30,
-      "description": "Same fuel card (****1234) used by different drivers within 30 minutes",
-      "severity": "high",
-      "estimated_loss": 150.00
-    }}
-  ],
-  "summary": {{
-    "total_violations": 5,
-    "total_estimated_loss": 500.00,
-    "high_risk_vehicles": ["TRUCK001", "VAN002"]
-  }}
-}}"""
-                
-                # Call Claude Haiku with correct token limit
-                response = client.messages.create(
-                    model="claude-3-haiku-20240307",
-                    max_tokens=4000,  # Haiku max is 4096
-                    temperature=0.1,
-                    messages=[{"role": "user", "content": prompt}]
-                )
-                
-                # Parse response
-                result_text = response.content[0].text.strip()
-                
-                # Extract JSON more carefully
-                import json
-                
-                if '{' in result_text:
-                    json_start = result_text.find('{')
-                    # Find the end of the JSON by counting braces
-                    brace_count = 0
-                    json_end = json_start
-                    
-                    for i, char in enumerate(result_text[json_start:], json_start):
-                        if char == '{':
-                            brace_count += 1
-                        elif char == '}':
-                            brace_count -= 1
-                            if brace_count == 0:
-                                json_end = i + 1
-                                break
-                    
-                    json_text = result_text[json_start:json_end]
-                    fraud_results = json.loads(json_text)
-                    
-                    st.session_state.fraud_results = fraud_results
-                    
-                    # Display results
-                    violations = fraud_results.get('violations', [])
-                    summary = fraud_results.get('summary', {})
-                    
-                    if violations:
-                        # Summary cards
-                        col1, col2, col3 = st.columns(3)
-                        with col1:
-                            st.metric("🚨 Violations Found", len(violations), delta=f"{len(violations)} issues")
-                        with col2:
-                            total_loss = summary.get('total_estimated_loss', 0)
-                            st.metric("💰 Estimated Loss", f"${total_loss:.2f}", delta=f"-${total_loss:.2f}")
-                        with col3:
-                            high_risk = len([v for v in violations if v.get('severity') == 'high'])
-                            st.metric("⚠️ High Risk", high_risk, delta=f"{high_risk} critical")
-                        
-                        st.markdown("---")
-                        
-                        # Show violations
-                        for i, violation in enumerate(violations):
-                            # Handle shared card use violations differently
-                            if violation.get('type') == 'shared_card_use':
-                                card_info = f"Card ****{violation.get('card_last_4', 'Unknown')}"
-                                vehicles = ', '.join(violation.get('vehicles_involved', []))
-                                with st.expander(f"**Shared Card Use** - {card_info} ({vehicles})"):
-                                    st.write(f"**Card Last 4:** ****{violation.get('card_last_4', 'Unknown')}")
-                                    st.write(f"**Vehicles Involved:** {', '.join(violation.get('vehicles_involved', []))}")
-                                    st.write(f"**Drivers Involved:** {', '.join(violation.get('drivers_involved', []))}")
-                                    st.write(f"**Time Span:** {violation.get('time_span_minutes', 'Unknown')} minutes")
-                                    
-                                    # Show transaction details
-                                    st.write("**Transactions:**")
-                                    for tx in violation.get('transactions', []):
-                                        st.write(f"  • {tx.get('timestamp', 'Unknown')} - {tx.get('driver_name', 'Unknown')} in {tx.get('vehicle_id', 'Unknown')} at {tx.get('location', 'Unknown')}")
-                                    
-                                    st.write(f"**Description:** {violation.get('description', 'No description')}")
-                                    st.write(f"**Severity:** {violation.get('severity', 'Unknown').upper()}")
-                                    if violation.get('estimated_loss'):
-                                        st.write(f"**Estimated Loss:** ${violation['estimated_loss']:.2f}")
-                            else:
-                                # Handle regular violations
-                                driver_info = f"{violation.get('driver_name', 'Unknown Driver')} ({violation.get('vehicle_id', 'Unknown Vehicle')})"
-                                with st.expander(f"**{violation.get('type', 'Unknown').replace('_', ' ').title()}** - {driver_info}"):
-                                    st.write(f"**Driver:** {violation.get('driver_name', 'Unknown')}")
-                                    st.write(f"**Vehicle:** {violation.get('vehicle_id', 'Unknown')}")
-                                    st.write(f"**Time:** {violation.get('timestamp', 'Unknown')}")
-                                    st.write(f"**Location:** {violation.get('location', 'Unknown')}")
-                                    # Show card last 4 for fuel-related violations
-                                    if violation.get('card_last_4'):
-                                        st.write(f"**Card Used:** ****{violation['card_last_4']}")
-                                    st.write(f"**Description:** {violation.get('description', 'No description')}")
-                                    st.write(f"**Severity:** {violation.get('severity', 'Unknown').upper()}")
-                                    if violation.get('estimated_loss'):
-                                        st.write(f"**Estimated Loss:** ${violation['estimated_loss']:.2f}")
-                    else:
-                        st.markdown("""
-                        <div class="success-card">
-                            <h3>🎉 Clean Fleet Audit Results</h3>
-                            <p>No fraud or policy violations detected in your fleet data!</p>
-                            <p><em>Your fleet operations appear to be following proper procedures.</em></p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                else:
-                    st.error("❌ Failed to get valid response from AI")
-                    
-            except Exception as e:
-                st.error(f"❌ Fraud detection failed: {str(e)}")
-
-def generate_pdf_report():
-    """Generate PDF report of fraud findings"""
-    if not st.session_state.fraud_results:
-        return None
-        
-    if not REPORTLAB_AVAILABLE:
-        return None
-        
-    # Create temporary file
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
-        pdf_path = tmp_file.name
+def main():
+    # Hero Section
+    st.markdown("""
+    <div class="hero-section">
+        <h1>🚛 FleetAudit.io</h1>
+        <h2>Stop Fleet Fraud Before It Costs You Thousands</h2>
+        <p>AI-powered fraud detection that analyzes your fuel, GPS, and job data to uncover theft, misuse, and policy violations in minutes.</p>
+    </div>
+    """, unsafe_allow_html=True)
     
-    # Create PDF
-    doc = SimpleDocTemplate(pdf_path, pagesize=letter)
-    styles = getSampleStyleSheet()
-    story = []
+    # Features Section
+    st.markdown("## Why FleetAudit.io?")
     
-    # Title
-    title = Paragraph("FleetAudit.io - Fraud Detection Report", styles['Title'])
-    story.append(title)
-    story.append(Spacer(1, 20))
-    
-    # Summary
-    violations = st.session_state.fraud_results.get('violations', [])
-    summary = st.session_state.fraud_results.get('summary', {})
-    
-    summary_text = f"""Report Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-    Total Violations: {len(violations)}
-    Estimated Total Loss: ${summary.get('total_estimated_loss', 0):.2f}
-    High Risk Vehicles: {', '.join(summary.get('high_risk_vehicles', []))}"""
-    
-    story.append(Paragraph(summary_text, styles['Normal']))
-    story.append(Spacer(1, 20))
-    
-    # Violations table
-    if violations:
-        story.append(Paragraph("Detected Violations:", styles['Heading2']))
-        story.append(Spacer(1, 10))
-        
-        # Table data
-        table_data = [['Type', 'Driver', 'Vehicle', 'Time', 'Location', 'Card', 'Loss']]
-        
-        for violation in violations:
-            if violation.get('type') == 'shared_card_use':
-                # Handle shared card violations with special formatting
-                vehicles = ', '.join(violation.get('vehicles_involved', []))
-                drivers = ', '.join(violation.get('drivers_involved', []))
-                card_info = f"****{violation.get('card_last_4', 'Unknown')}"
-                time_span = f"{violation.get('time_span_minutes', 'Unknown')} min"
-                
-                table_data.append([
-                    'Shared Card Use',
-                    drivers,
-                    vehicles,
-                    time_span,
-                    'Multiple Locations',
-                    card_info,
-                    f"${violation.get('estimated_loss', 0):.2f}"
-                ])
-            else:
-                # Handle regular violations
-                card_used = f"****{violation.get('card_last_4', 'N/A')}" if violation.get('card_last_4') else 'N/A'
-                table_data.append([
-                    violation.get('type', '').replace('_', ' ').title(),
-                    violation.get('driver_name', 'Unknown'),
-                    violation.get('vehicle_id', 'Unknown'),
-                    violation.get('timestamp', 'Unknown'),
-                    violation.get('location', 'Unknown'),
-                    card_used,
-                    f"${violation.get('estimated_loss', 0):.2f}"
-                ])
-        
-        # Create table
-        table = Table(table_data)
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 14),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
-        ]))
-        
-        story.append(table)
-    
-    # Build PDF
-    doc.build(story)
-    return pdf_path
-
-def export_reports():
-    """Export and email reports section"""
-    st.markdown("### 📄 Export Reports")
-    st.markdown("Generate professional reports for management and compliance purposes.")
-    
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("📥 Download PDF Report", use_container_width=True):
-            if not REPORTLAB_AVAILABLE:
-                st.error("📄 PDF generation requires reportlab. Install it to enable PDF exports.")
-            else:
-                with st.spinner("Generating PDF report..."):
-                    try:
-                        pdf_path = generate_pdf_report()
-                        
-                        if pdf_path:
-                            with open(pdf_path, "rb") as pdf_file:
-                                st.download_button(
-                                    label="📥 Download Report",
-                                    data=pdf_file.read(),
-                                    file_name=f"fraud_report_{datetime.now().strftime('%Y%m%d')}.pdf",
-                                    mime="application/pdf",
-                                    use_container_width=True
-                                )
-                            
-                            # Clean up temp file
-                            os.unlink(pdf_path)
-                            
-                    except Exception as e:
-                        st.error(f"PDF generation failed: {str(e)}")
+        st.markdown("""
+        <div class="feature-card">
+            <h3>🔍 AI-Powered Detection</h3>
+            <p>Advanced algorithms detect fraud patterns humans miss - shared cards, ghost jobs, after-hours abuse, and more.</p>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col2:
-        recipient_email = st.text_input("📧 Email Report To:", placeholder="manager@company.com")
+        st.markdown("""
+        <div class="feature-card">
+            <h3>💰 Immediate ROI</h3>
+            <p>Customers typically recover 10x their subscription cost in the first month by stopping ongoing fraud.</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown("""
+        <div class="feature-card">
+            <h3>📊 Professional Reports</h3>
+            <p>Generate detailed PDF reports with evidence for HR, management, and legal proceedings.</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Demo Section
+    st.markdown("""
+    <div class="demo-section">
+        <div class="demo-header">
+            <h2>🎯 See FleetAudit.io in Action</h2>
+            <p>Select a sample fleet below to see how our AI detects fraud and policy violations:</p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Demo selector
+    demo_data = get_demo_data()
+    
+    col1, col2 = st.columns([1, 3])
+    
+    with col1:
+        scenario_names = list(demo_data.keys())
+        selected_scenario = st.selectbox(
+            "Choose Sample Fleet:",
+            scenario_names,
+            help="Select different fleet examples to see various types of fraud detection"
+        )
         
-        if st.button("📧 Send Email Report", use_container_width=True) and recipient_email:
-            st.info("🔧 Email functionality coming soon - use PDF download for now")
+        scenario_info = demo_data[selected_scenario]
+        st.info(f"**{selected_scenario}**\n\n{scenario_info['description']}")
+        
+        if st.button("🔍 Run Fraud Analysis", type="primary", use_container_width=True):
+            st.session_state.show_demo = True
+    
+    with col2:
+        if st.session_state.get('show_demo', False):
+            st.markdown(f"### 🚨 Fraud Detection Results: {selected_scenario}")
+            display_demo_results(selected_scenario, demo_data[selected_scenario])
+    
+    # Pricing Preview
+    st.markdown("---")
+    st.markdown("## 💳 Simple, Transparent Pricing")
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col2:
+        st.markdown("""
+        <div class="pricing-preview">
+            <h3>Professional Plan</h3>
+            <div class="price">$99<span style="font-size: 1rem; color: #666;">/month</span></div>
+            <p>✅ Unlimited fleet data analysis<br>
+            ✅ All fraud detection features<br>
+            ✅ PDF report generation<br>
+            ✅ Email alerts & notifications<br>
+            ✅ Priority support</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("🚀 Start Free Trial", type="primary", use_container_width=True):
+            st.balloons()
+            st.success("🎉 Ready to start your free trial! Subscription system coming soon.")
+    
+    # Call to Action
+    st.markdown("---")
+    st.markdown("""
+    <div style="text-align: center; padding: 2rem;">
+        <h2>Ready to Stop Fleet Fraud?</h2>
+        <p style="font-size: 1.2rem; margin-bottom: 2rem;">Join hundreds of fleet managers who've recovered thousands in stolen fuel and time.</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Footer
+    st.markdown("---")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("**FleetAudit.io**")
+        st.markdown("AI-powered fleet fraud detection")
+    
+    with col2:
+        st.markdown("**Features**")
+        st.markdown("• Shared card detection\n• Ghost job analysis\n• After-hours monitoring\n• GPS cross-referencing")
+    
+    with col3:
+        st.markdown("**Support**")
+        st.markdown("• 24/7 customer support\n• Implementation assistance\n• Training & onboarding")
 
-# Redirect to landing page
-st.markdown("""
-<div style="text-align: center; padding: 4rem;">
-    <h1>🚛 FleetAudit.io</h1>
-    <p>This page has moved to our new landing page.</p>
-    <p>Please use the sidebar navigation to access:</p>
-    <ul style="text-align: left; max-width: 400px; margin: 2rem auto;">
-        <li><strong>Landing Page</strong> - Try our demo and see pricing</li>
-        <li><strong>🚛 Product</strong> - Full fraud detection platform (subscribers only)</li>
-    </ul>
-</div>
-""", unsafe_allow_html=True)
+if __name__ == "__main__":
+    main()
