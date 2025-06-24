@@ -4,6 +4,15 @@ import tempfile
 import os
 from datetime import datetime
 from anthropic import Anthropic
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
 
 # Page config
 st.set_page_config(
@@ -178,6 +187,7 @@ def detect_fraud():
 
 Find these fraud types:
 - After-hours fuel purchases
+- Ghost jobs (jobs in schedule but no GPS activity at location)
 - Fuel without GPS at location  
 - Excessive fuel amounts
 - Rapid consecutive purchases
@@ -188,7 +198,8 @@ Return JSON:
   "violations": [
     {{
       "type": "after_hours",
-      "vehicle_id": "TRUCK001", 
+      "vehicle_id": "VAN-004", 
+      "driver_name": "Diana",
       "timestamp": "2024-06-16 02:00:00",
       "location": "Shell Station",
       "description": "Fuel purchase at 2 AM outside business hours",
@@ -249,7 +260,10 @@ Return JSON:
                         
                         # Show violations
                         for i, violation in enumerate(violations):
-                            with st.expander(f"**{violation.get('type', 'Unknown').replace('_', ' ').title()}** - {violation.get('vehicle_id', 'Unknown Vehicle')}"):
+                            driver_info = f"{violation.get('driver_name', 'Unknown Driver')} ({violation.get('vehicle_id', 'Unknown Vehicle')})"
+                            with st.expander(f"**{violation.get('type', 'Unknown').replace('_', ' ').title()}** - {driver_info}"):
+                                st.write(f"**Driver:** {violation.get('driver_name', 'Unknown')}")
+                                st.write(f"**Vehicle:** {violation.get('vehicle_id', 'Unknown')}")
                                 st.write(f"**Time:** {violation.get('timestamp', 'Unknown')}")
                                 st.write(f"**Location:** {violation.get('location', 'Unknown')}")
                                 st.write(f"**Description:** {violation.get('description', 'No description')}")
@@ -264,6 +278,108 @@ Return JSON:
                     
             except Exception as e:
                 st.error(f"❌ Fraud detection failed: {str(e)}")
+
+def generate_pdf_report():
+    """Generate PDF report of fraud findings"""
+    if not st.session_state.fraud_results:
+        return None
+        
+    # Create temporary file
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+        pdf_path = tmp_file.name
+    
+    # Create PDF
+    doc = SimpleDocTemplate(pdf_path, pagesize=letter)
+    styles = getSampleStyleSheet()
+    story = []
+    
+    # Title
+    title = Paragraph("FleetAudit.io - Fraud Detection Report", styles['Title'])
+    story.append(title)
+    story.append(Spacer(1, 20))
+    
+    # Summary
+    violations = st.session_state.fraud_results.get('violations', [])
+    summary = st.session_state.fraud_results.get('summary', {})
+    
+    summary_text = f"""Report Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+    Total Violations: {len(violations)}
+    Estimated Total Loss: ${summary.get('total_estimated_loss', 0):.2f}
+    High Risk Vehicles: {', '.join(summary.get('high_risk_vehicles', []))}"""
+    
+    story.append(Paragraph(summary_text, styles['Normal']))
+    story.append(Spacer(1, 20))
+    
+    # Violations table
+    if violations:
+        story.append(Paragraph("Detected Violations:", styles['Heading2']))
+        story.append(Spacer(1, 10))
+        
+        # Table data
+        table_data = [['Type', 'Driver', 'Vehicle', 'Time', 'Location', 'Loss']]
+        
+        for violation in violations:
+            table_data.append([
+                violation.get('type', '').replace('_', ' ').title(),
+                violation.get('driver_name', 'Unknown'),
+                violation.get('vehicle_id', 'Unknown'),
+                violation.get('timestamp', 'Unknown'),
+                violation.get('location', 'Unknown'),
+                f"${violation.get('estimated_loss', 0):.2f}"
+            ])
+        
+        # Create table
+        table = Table(table_data)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 14),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        
+        story.append(table)
+    
+    # Build PDF
+    doc.build(story)
+    return pdf_path
+
+def export_reports():
+    """Export and email reports section"""
+    st.subheader("📄 Export Reports")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("📥 Download PDF Report", use_container_width=True):
+            with st.spinner("Generating PDF report..."):
+                try:
+                    pdf_path = generate_pdf_report()
+                    
+                    if pdf_path:
+                        with open(pdf_path, "rb") as pdf_file:
+                            st.download_button(
+                                label="📥 Download Report",
+                                data=pdf_file.read(),
+                                file_name=f"fraud_report_{datetime.now().strftime('%Y%m%d')}.pdf",
+                                mime="application/pdf",
+                                use_container_width=True
+                            )
+                        
+                        # Clean up temp file
+                        os.unlink(pdf_path)
+                        
+                except Exception as e:
+                    st.error(f"PDF generation failed: {str(e)}")
+    
+    with col2:
+        recipient_email = st.text_input("📧 Email Report To:", placeholder="manager@company.com")
+        
+        if st.button("📧 Send Email Report", use_container_width=True) and recipient_email:
+            st.info("🔧 Email functionality coming soon - use PDF download for now")
 
 def main():
     """Main app"""
@@ -289,6 +405,11 @@ def main():
     
     # Fraud detection
     detect_fraud()
+    
+    # Report export section
+    if st.session_state.fraud_results:
+        st.divider()
+        export_reports()
     
     # Show current data status
     st.divider()
