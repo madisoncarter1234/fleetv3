@@ -4,13 +4,26 @@ import json
 from datetime import datetime, timedelta
 import random
 
-# Page config
-st.set_page_config(
-    page_title="FleetAudit.io - Fleet Fraud Detection",
-    page_icon="🚛",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# Check Streamlit version for multipage compatibility
+try:
+    import streamlit as st
+    st_version = st.__version__
+    major, minor = map(int, st_version.split('.')[:2])
+    if major < 1 or (major == 1 and minor < 10):
+        st.error(f"⚠️ Streamlit {st_version} detected. Multipage requires 1.10+")
+except:
+    pass
+
+# Page config with error handling
+try:
+    st.set_page_config(
+        page_title="FleetAudit.io - Fleet Fraud Detection",
+        page_icon="🚛",
+        layout="wide",
+        initial_sidebar_state="expanded"
+    )
+except:
+    pass  # Config already set
 
 # Custom CSS for landing page styling
 st.markdown("""
@@ -369,7 +382,16 @@ def display_demo_results(scenario_name, scenario_data):
                 if violation.get('estimated_loss'):
                     st.write(f"**Estimated Loss:** ${violation['estimated_loss']:.2f}")
 
+def init_global_session_state():
+    """Initialize session state variables that should persist across all pages"""
+    if 'navigation_initialized' not in st.session_state:
+        st.session_state.navigation_initialized = True
+    if 'current_page' not in st.session_state:
+        st.session_state.current_page = 'landing'
+
 def main():
+    # Initialize session state first
+    init_global_session_state()
     # Header navigation
     col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
     
@@ -381,11 +403,19 @@ def main():
     
     with col3:
         if st.button("App", key="nav_app", use_container_width=True):
-            st.switch_page("pages/1_Product.py")
+            try:
+                st.session_state.current_page = 'app'
+                st.switch_page("pages/1_Product.py")
+            except Exception as e:
+                st.error(f"Navigation error: {e}")
     
     with col4:
         if st.button("Backup", key="nav_backup", use_container_width=True):
-            st.switch_page("pages/2_Backup.py")
+            try:
+                st.session_state.current_page = 'backup'
+                st.switch_page("pages/2_Backup.py")
+            except Exception as e:
+                st.error(f"Navigation error: {e}")
     
     st.markdown("---")
     

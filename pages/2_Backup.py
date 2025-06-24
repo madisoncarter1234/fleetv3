@@ -21,12 +21,15 @@ except ImportError:
     Table = None
     TableStyle = None
 
-# Page config
-st.set_page_config(
-    page_title="FleetAudit.io - Backup",
-    page_icon="🚛",
-    layout="wide"
-)
+# Page config with error handling
+try:
+    st.set_page_config(
+        page_title="FleetAudit.io - Backup",
+        page_icon="🚛",
+        layout="wide"
+    )
+except:
+    pass  # Config already set
 
 # Custom CSS for better styling
 st.markdown("""
