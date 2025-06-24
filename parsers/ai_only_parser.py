@@ -91,6 +91,7 @@ Return JSON: {{"parsed_data":[ALL_ROWS], "violations":[VIOLATIONS]}}"""
             )
             
             result_text = response.content[0].text.strip()
+            print(f"🔍 Raw AI response (first 500 chars): {result_text[:500]}...")
             result = self._parse_ai_response(result_text)
             
             # Return Haiku result - always create DataFrame for app compatibility
@@ -138,17 +139,27 @@ Return JSON: {{"parsed_data":[ALL_ROWS], "violations":[VIOLATIONS]}}"""
         try:
             # Extract JSON
             if '```json' in result_text:
-                result_text = result_text.split('```json')[1].split('```')[0]
+                json_text = result_text.split('```json')[1].split('```')[0]
+                print(f"🔍 Extracted JSON from ```json blocks")
             elif '```' in result_text:
-                result_text = result_text.split('```')[1].split('```')[0]
+                json_text = result_text.split('```')[1].split('```')[0]
+                print(f"🔍 Extracted JSON from ``` blocks")
+            else:
+                json_text = result_text
+                print(f"🔍 Using raw response as JSON")
             
-            result = json.loads(result_text)
+            print(f"🔍 JSON to parse (first 200 chars): {json_text[:200]}...")
+            result = json.loads(json_text)
+            print(f"🔍 Successfully parsed JSON with keys: {list(result.keys())}")
             
-            # Always ensure dataframe exists (moved to main function for consistency)
-            # This is handled in the main parse function now
+            if 'parsed_data' in result:
+                print(f"🔍 Found {len(result['parsed_data'])} items in parsed_data")
+            else:
+                print(f"⚠️ No 'parsed_data' key in result!")
             
             return result
             
         except Exception as e:
-            print(f"Failed to parse AI response: {e}")
+            print(f"❌ Failed to parse AI response: {e}")
+            print(f"❌ Raw response: {result_text}")
             return None
