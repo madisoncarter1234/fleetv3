@@ -551,7 +551,7 @@ def main():
             <a href="#features" class="nav-link" onclick="smoothScrollTo('features'); return false;">Features</a>
             <a href="#demo" class="nav-link" onclick="smoothScrollTo('demo'); return false;">Demo</a>
             <a href="#pricing" class="nav-link" onclick="smoothScrollTo('pricing'); return false;">Pricing</a>
-            <button class="nav-cta" onclick="window.location.href='/1_Product'">Try FleetAudit →</button>
+            <button class="nav-cta" onclick="window.location.pathname = '/1_Product'">Try FleetAudit →</button>
         </div>
     </div>
     <div class="navbar-spacer"></div>
