@@ -97,6 +97,43 @@ st.markdown("""
         transform: translateY(-1px);
     }
     
+    /* Smooth scrolling */
+    html {
+        scroll-behavior: smooth;
+    }
+    
+    /* Section padding for scroll offset */
+    .scroll-section {
+        scroll-margin-top: 100px;
+    }
+    
+    /* JavaScript for smooth scrolling */
+</style>
+<script>
+    function smoothScrollTo(elementId) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    }
+    
+    // Override anchor link clicks
+    document.addEventListener('DOMContentLoaded', function() {
+        const links = document.querySelectorAll('a[href^="#"]');
+        links.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href').substring(1);
+                smoothScrollTo(targetId);
+            });
+        });
+    });
+</script>
+<style>
+    
     /* Content container */
     .content-container {
         max-width: 1200px;
@@ -447,17 +484,17 @@ def main():
     # Initialize session state first
     init_global_session_state()
     
-    # Top Navigation Bar - Science.io style
+    # Top Navigation Bar - Science.io style with smooth scrolling
     st.markdown("""
     <div class="top-navbar">
         <div class="nav-logo">
             🚛 FleetAudit.io
         </div>
         <div class="nav-links">
-            <a href="#" class="nav-link">Features</a>
-            <a href="#" class="nav-link">Pricing</a>
-            <a href="#" class="nav-link">Demo</a>
-            <a href="#" class="nav-cta" onclick="window.location.href='1_Product'">Try FleetAudit →</a>
+            <a href="#features" class="nav-link" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'}); return false;">Features</a>
+            <a href="#demo" class="nav-link" onclick="document.getElementById('demo').scrollIntoView({behavior: 'smooth'}); return false;">Demo</a>
+            <a href="#pricing" class="nav-link" onclick="document.getElementById('pricing').scrollIntoView({behavior: 'smooth'}); return false;">Pricing</a>
+            <a href="#" class="nav-cta" onclick="window.location.href='pages/1_Product.py'">Try FleetAudit →</a>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -487,7 +524,7 @@ def main():
     # Features Section with Science.io styling
     st.markdown("""
     <div class="content-container">
-        <div class="features-section">
+        <div class="features-section scroll-section" id="features">
             <h2 class="section-heading">Why FleetAudit.io?</h2>
             <div class="features-grid">
                 <div class="feature-card">
@@ -510,7 +547,7 @@ def main():
     # Demo Section with new styling
     st.markdown("""
     <div class="content-container">
-        <div class="demo-section">
+        <div class="demo-section scroll-section" id="demo">
             <div class="demo-header">
                 <h2>🎯 See FleetAudit.io in Action</h2>
                 <p style="color: #6b7280; font-size: 1.1rem; margin-bottom: 2rem;">Select a sample fleet below to see how our AI detects fraud and policy violations:</p>
@@ -546,7 +583,7 @@ def main():
     # Pricing Section with Science.io styling
     st.markdown("""
     <div class="content-container">
-        <div class="pricing-section">
+        <div class="pricing-section scroll-section" id="pricing">
             <h2 class="section-heading">💳 Simple, Transparent Pricing</h2>
             <div class="pricing-card">
                 <h3 style="color: #111827; font-size: 1.5rem; margin-bottom: 1rem;">Professional Plan</h3>
