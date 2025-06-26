@@ -307,6 +307,14 @@ st.markdown("""
         transform: translateY(-1px) !important;
         box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
     }
+    
+    /* Position the nav button */
+    button[key="nav_app_button"] {
+        position: absolute !important;
+        top: 1rem !important;
+        right: 2rem !important;
+        z-index: 1001 !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -501,10 +509,16 @@ def main():
             <a href="#features" class="nav-link" onclick="smoothScrollTo('features'); return false;">Features</a>
             <a href="#demo" class="nav-link" onclick="smoothScrollTo('demo'); return false;">Demo</a>
             <a href="#pricing" class="nav-link" onclick="smoothScrollTo('pricing'); return false;">Pricing</a>
-            <a href="/1_Product" class="nav-cta">Try FleetAudit →</a>
         </div>
     </div>
     """, unsafe_allow_html=True)
+    
+    # Add a separate Try FleetAudit button below the navbar
+    with st.container():
+        col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
+        with col5:
+            if st.button("Try FleetAudit →", type="primary", key="nav_app_button"):
+                st.switch_page("pages/1_Product.py")
     
     # Hero Section - Science.io style
     st.markdown("""
@@ -519,14 +533,8 @@ def main():
     # CTA Button with navigation
     col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
-        if st.button("🚀 Try FleetAudit Free", type="primary", use_container_width=True):
-            try:
-                st.switch_page("pages/1_Product.py")
-            except Exception as e:
-                try:
-                    st.switch_page("1_Product")
-                except Exception as e2:
-                    st.error(f"Navigation error: {e2}")
+        if st.button("🚀 Try FleetAudit Free", type="primary", use_container_width=True, key="hero_cta"):
+            st.switch_page("pages/1_Product.py")
     
     # Features Section with Science.io styling
     st.markdown("""
