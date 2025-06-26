@@ -47,13 +47,19 @@ st.markdown("""
         backdrop-filter: blur(10px);
         border-bottom: 1px solid #e5e7eb;
         padding: 1rem 2rem;
-        position: sticky;
+        position: fixed;
         top: 0;
+        left: 0;
+        right: 0;
         z-index: 1000;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin: -1rem -1rem 2rem -1rem;
+    }
+    
+    /* Spacer for fixed navbar */
+    .navbar-spacer {
+        height: 70px;
     }
     
     .nav-logo {
@@ -148,30 +154,57 @@ st.markdown("""
         padding: 0 2rem;
     }
     
-    /* Hero section - Science.io style */
+    /* Hero section - Enhanced design */
     .hero-section {
         text-align: center;
-        padding: 5rem 2rem;
-        background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
-        margin-bottom: 5rem;
+        padding: 6rem 3rem;
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0f9ff 100%);
+        border-radius: 1.5rem;
+        margin: 2rem auto 4rem;
+        max-width: 900px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(37, 99, 235, 0.08);
+    }
+    
+    .hero-section::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(37, 99, 235, 0.03) 0%, transparent 70%);
+        animation: pulse 15s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { transform: scale(0.8); opacity: 0.5; }
+        50% { transform: scale(1.2); opacity: 0.8; }
     }
     
     .hero-section h1 {
         color: #111827 !important;
-        font-size: 3.5rem !important;
-        font-weight: 700 !important;
+        font-size: 3.75rem !important;
+        font-weight: 800 !important;
         margin-bottom: 1.5rem !important;
         line-height: 1.1 !important;
+        letter-spacing: -0.02em;
+        position: relative;
+        z-index: 1;
     }
     
     .hero-section h2 {
-        color: #374151 !important;
-        font-size: 1.25rem !important;
+        color: #4b5563 !important;
+        font-size: 1.375rem !important;
         font-weight: 400 !important;
-        margin-bottom: 2rem !important;
-        max-width: 600px;
+        margin-bottom: 2.5rem !important;
+        max-width: 700px;
         margin-left: auto;
         margin-right: auto;
+        line-height: 1.6 !important;
+        position: relative;
+        z-index: 1;
     }
     
     .hero-cta {
@@ -308,12 +341,12 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
     }
     
-    /* Integrated nav button styling */
-    .nav-button-container {
-        position: absolute;
-        top: 1rem;
-        right: 2rem;
-        z-index: 1001;
+    /* Hide the trigger button */
+    button:has-text("hidden_nav"), 
+    div[data-testid="stButton"]:has(button:has-text("hidden_nav")) {
+        display: none !important;
+        position: absolute !important;
+        top: -9999px !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -499,26 +532,41 @@ def main():
     # Initialize session state first
     init_global_session_state()
     
-    # Create columns for navbar layout
-    nav_col1, nav_col2 = st.columns([5, 1])
-    
-    with nav_col1:
-        st.markdown("""
-        <div class="top-navbar" style="position: relative;">
-            <div class="nav-logo">
-                🚛 FleetAudit.io
-            </div>
-            <div class="nav-links">
-                <a href="#features" class="nav-link" onclick="smoothScrollTo('features'); return false;">Features</a>
-                <a href="#demo" class="nav-link" onclick="smoothScrollTo('demo'); return false;">Demo</a>
-                <a href="#pricing" class="nav-link" onclick="smoothScrollTo('pricing'); return false;">Pricing</a>
-            </div>
+    # Full-width navigation bar
+    st.markdown("""
+    <div class="top-navbar">
+        <div class="nav-logo">
+            🚛 FleetAudit.io
         </div>
-        """, unsafe_allow_html=True)
+        <div class="nav-links">
+            <a href="#features" class="nav-link" onclick="smoothScrollTo('features'); return false;">Features</a>
+            <a href="#demo" class="nav-link" onclick="smoothScrollTo('demo'); return false;">Demo</a>
+            <a href="#pricing" class="nav-link" onclick="smoothScrollTo('pricing'); return false;">Pricing</a>
+            <a href="#" class="nav-cta" id="tryFleetAuditBtn">Try FleetAudit →</a>
+        </div>
+    </div>
+    <div class="navbar-spacer"></div>
+    """, unsafe_allow_html=True)
     
-    with nav_col2:
-        if st.button("Try FleetAudit →", type="primary", key="nav_app_button"):
-            st.switch_page("pages/1_Product.py")
+    # Hidden button for navigation (triggered by nav CTA)
+    if st.button("hidden_nav", key="nav_trigger", type="primary", label_visibility="hidden"):
+        st.switch_page("pages/1_Product.py")
+    
+    # JavaScript to connect the nav button to Streamlit button
+    st.markdown("""
+    <script>
+        document.getElementById('tryFleetAuditBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            // Find and click the hidden Streamlit button
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(button => {
+                if (button.innerText.includes('hidden_nav')) {
+                    button.click();
+                }
+            });
+        });
+    </script>
+    """, unsafe_allow_html=True)
     
     # Hero Section - Science.io style
     st.markdown("""
