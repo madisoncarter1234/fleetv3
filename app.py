@@ -84,7 +84,7 @@ st.markdown("""
     
     .nav-cta {
         background: #2563eb;
-        color: white;
+        color: white !important;
         padding: 0.5rem 1.5rem;
         border-radius: 0.5rem;
         text-decoration: none;
@@ -95,6 +95,7 @@ st.markdown("""
     .nav-cta:hover {
         background: #1d4ed8;
         transform: translateY(-1px);
+        color: white !important;
     }
     
     /* Smooth scrolling */
@@ -104,24 +105,30 @@ st.markdown("""
     
     /* Section padding for scroll offset */
     .scroll-section {
-        scroll-margin-top: 100px;
+        scroll-margin-top: 80px;
+        padding-top: 2rem;
     }
     
     /* JavaScript for smooth scrolling */
 </style>
 <script>
+    // Enhanced smooth scrolling with easing
     function smoothScrollTo(elementId) {
         const element = document.getElementById(elementId);
         if (element) {
-            element.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
+            const yOffset = -80; // Offset for fixed navbar
+            const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+            
+            window.scrollTo({
+                top: y,
+                behavior: 'smooth'
             });
         }
     }
     
-    // Override anchor link clicks
-    document.addEventListener('DOMContentLoaded', function() {
+    // Wait for Streamlit to load
+    setTimeout(function() {
+        // Override anchor link clicks
         const links = document.querySelectorAll('a[href^="#"]');
         links.forEach(link => {
             link.addEventListener('click', function(e) {
@@ -130,7 +137,7 @@ st.markdown("""
                 smoothScrollTo(targetId);
             });
         });
-    });
+    }, 100);
 </script>
 <style>
     
@@ -491,10 +498,10 @@ def main():
             🚛 FleetAudit.io
         </div>
         <div class="nav-links">
-            <a href="#features" class="nav-link" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'}); return false;">Features</a>
-            <a href="#demo" class="nav-link" onclick="document.getElementById('demo').scrollIntoView({behavior: 'smooth'}); return false;">Demo</a>
-            <a href="#pricing" class="nav-link" onclick="document.getElementById('pricing').scrollIntoView({behavior: 'smooth'}); return false;">Pricing</a>
-            <a href="#" class="nav-cta" onclick="window.location.href='pages/1_Product.py'">Try FleetAudit →</a>
+            <a href="#features" class="nav-link" onclick="smoothScrollTo('features'); return false;">Features</a>
+            <a href="#demo" class="nav-link" onclick="smoothScrollTo('demo'); return false;">Demo</a>
+            <a href="#pricing" class="nav-link" onclick="smoothScrollTo('pricing'); return false;">Pricing</a>
+            <a href="/1_Product" class="nav-cta">Try FleetAudit →</a>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -550,7 +557,7 @@ def main():
         <div class="demo-section scroll-section" id="demo">
             <div class="demo-header">
                 <h2>🎯 See FleetAudit.io in Action</h2>
-                <p style="color: #6b7280; font-size: 1.1rem; margin-bottom: 2rem;">Select a sample fleet below to see how our AI detects fraud and policy violations:</p>
+                <p style="color: #6b7280; font-size: 1.1rem; margin-bottom: 2rem; text-align: center;">Select a sample fleet below to see how our AI detects fraud and policy violations:</p>
             </div>
         </div>
     </div>
