@@ -341,10 +341,21 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
     }
     
-    /* Additional hiding for navigation trigger */
-    .nav-trigger-hidden {
-        display: none !important;
-        visibility: hidden !important;
+    /* Ensure nav button styling */
+    div[style*="position: fixed; top: 1rem; right: 2rem"] .stButton > button {
+        background: #2563eb !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 0.5rem !important;
+        padding: 0.5rem 1.5rem !important;
+        font-weight: 600 !important;
+        font-family: 'Inter', sans-serif !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    div[style*="position: fixed; top: 1rem; right: 2rem"] .stButton > button:hover {
+        background: #1d4ed8 !important;
+        transform: translateY(-1px) !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -530,49 +541,29 @@ def main():
     # Initialize session state first
     init_global_session_state()
     
-    # Full-width navigation bar
-    st.markdown("""
-    <div class="top-navbar">
-        <div class="nav-logo">
-            🚛 FleetAudit.io
-        </div>
-        <div class="nav-links">
-            <a href="#features" class="nav-link" onclick="smoothScrollTo('features'); return false;">Features</a>
-            <a href="#demo" class="nav-link" onclick="smoothScrollTo('demo'); return false;">Demo</a>
-            <a href="#pricing" class="nav-link" onclick="smoothScrollTo('pricing'); return false;">Pricing</a>
-            <a href="#" class="nav-cta" id="tryFleetAuditBtn">Try FleetAudit →</a>
-        </div>
-    </div>
-    <div class="navbar-spacer"></div>
-    """, unsafe_allow_html=True)
+    # Create navbar with integrated button
+    nav_col1, nav_col2 = st.columns([6, 1])
     
-    # Hidden button for navigation (triggered by nav CTA)
-    with st.container():
-        st.markdown('<div class="nav-trigger-hidden" style="position: absolute; top: -9999px; left: -9999px; width: 0; height: 0; overflow: hidden;">', unsafe_allow_html=True)
-        if st.button("Navigate", key="nav_trigger", type="primary"):
+    with nav_col1:
+        st.markdown("""
+        <div style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid #e5e7eb; padding: 1rem 2rem; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; display: flex; justify-content: space-between; align-items: center;">
+            <div class="nav-logo">
+                🚛 FleetAudit.io
+            </div>
+            <div class="nav-links">
+                <a href="#features" class="nav-link" onclick="smoothScrollTo('features'); return false;">Features</a>
+                <a href="#demo" class="nav-link" onclick="smoothScrollTo('demo'); return false;">Demo</a>
+                <a href="#pricing" class="nav-link" onclick="smoothScrollTo('pricing'); return false;">Pricing</a>
+            </div>
+        </div>
+        <div class="navbar-spacer"></div>
+        """, unsafe_allow_html=True)
+    
+    with nav_col2:
+        st.markdown('<div style="position: fixed; top: 1rem; right: 2rem; z-index: 1001;">', unsafe_allow_html=True)
+        if st.button("Try FleetAudit →", type="primary", key="nav_app_button"):
             st.switch_page("pages/1_Product.py")
         st.markdown('</div>', unsafe_allow_html=True)
-    
-    # JavaScript to connect the nav button to Streamlit button
-    st.markdown("""
-    <script>
-        setTimeout(function() {
-            const tryBtn = document.getElementById('tryFleetAuditBtn');
-            if (tryBtn) {
-                tryBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    // Find the navigation trigger button
-                    const buttons = document.querySelectorAll('button');
-                    buttons.forEach(button => {
-                        if (button.textContent.includes('Navigate')) {
-                            button.click();
-                        }
-                    });
-                });
-            }
-        }, 500);
-    </script>
-    """, unsafe_allow_html=True)
     
     # Hero Section - Science.io style
     st.markdown("""
