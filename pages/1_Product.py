@@ -31,131 +31,257 @@ try:
 except:
     pass  # Config already set
 
-# Custom CSS for better styling
+# Science.io-inspired CSS styling for Product page
 st.markdown("""
 <style>
-    /* Main theme colors */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    /* Global styling */
+    html, body, [class*="css"] {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    
     .main {
-        padding-top: 2rem;
+        background: linear-gradient(to bottom, #f9fafb, #ffffff);
+        padding: 0;
+        max-width: none;
     }
     
-    /* Header styling */
-    .main-header {
-        background: linear-gradient(90deg, #1f4e79 0%, #2d5aa0 100%);
-        padding: 2rem;
-        border-radius: 10px;
-        margin-bottom: 2rem;
-        text-align: center;
-        color: white;
+    /* Top Navigation Bar - Science.io style */
+    .top-navbar {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid #e5e7eb;
+        padding: 1rem 2rem;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: -1rem -1rem 2rem -1rem;
     }
     
-    .main-header h1 {
-        color: white !important;
-        margin-bottom: 0.5rem;
-        font-size: 2.5rem;
+    .nav-logo {
+        font-size: 1.5rem;
         font-weight: 700;
+        color: #1f2937;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
     }
     
-    .main-header p {
-        color: #e8f4f8 !important;
-        font-size: 1.2rem;
-        margin-bottom: 0;
+    .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
     }
     
-    /* Upload section styling */
-    .upload-section {
-        background: #f8f9fa;
-        padding: 1.5rem;
-        border-radius: 8px;
-        border: 1px solid #e9ecef;
-        margin-bottom: 1rem;
+    .nav-link {
+        color: #6b7280;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.3s ease;
     }
     
-    /* Violation card styling */
-    .violation-card {
-        background: #fff5f5;
-        border: 1px solid #fed7d7;
-        border-radius: 8px;
-        padding: 1rem;
-        margin: 0.5rem 0;
-        border-left: 4px solid #e53e3e;
+    .nav-link:hover {
+        color: #2563eb;
     }
     
-    .violation-card.high {
-        border-left-color: #e53e3e;
-        background: #fff5f5;
-    }
-    
-    .violation-card.medium {
-        border-left-color: #dd6b20;
-        background: #fffbf0;
-    }
-    
-    .violation-card.low {
-        border-left-color: #ecc94b;
-        background: #fffff0;
-    }
-    
-    /* Success styling */
-    .success-card {
-        background: #f0fff4;
-        border: 1px solid #c6f6d5;
-        border-radius: 8px;
-        padding: 1.5rem;
-        text-align: center;
-        border-left: 4px solid #38a169;
-    }
-    
-    /* Button styling */
-    .stButton > button {
-        background: linear-gradient(90deg, #1f4e79 0%, #2d5aa0 100%);
+    .nav-cta {
+        background: #2563eb;
         color: white;
-        border-radius: 6px;
-        border: none;
-        padding: 0.5rem 1rem;
+        padding: 0.5rem 1.5rem;
+        border-radius: 0.5rem;
+        text-decoration: none;
         font-weight: 600;
         transition: all 0.3s ease;
     }
     
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(31, 78, 121, 0.3);
+    .nav-cta:hover {
+        background: #1d4ed8;
+        transform: translateY(-1px);
     }
     
-    /* Metric styling */
-    [data-testid="metric-container"] {
+    /* Content container */
+    .content-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 2rem;
+    }
+    
+    /* Header styling - Clean and modern */
+    .app-header {
+        text-align: center;
+        padding: 3rem 2rem;
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+        border-radius: 1rem;
+        margin-bottom: 3rem;
+    }
+    
+    .app-header h1 {
+        color: #111827 !important;
+        font-size: 2.5rem !important;
+        font-weight: 700 !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    .app-header p {
+        color: #6b7280 !important;
+        font-size: 1.2rem !important;
+        margin-bottom: 0 !important;
+    }
+    
+    /* Upload section styling */
+    .upload-section {
         background: white;
-        border: 1px solid #e9ecef;
-        padding: 1rem;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border: 1px solid #e5e7eb;
+        border-radius: 1rem;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
     
-    /* Upload widget styling */
-    .uploadedFile {
-        border: 2px dashed #2d5aa0;
-        border-radius: 8px;
-        padding: 1rem;
-        background: #f8f9fa;
+    .upload-section h3 {
+        color: #111827 !important;
+        font-size: 1.25rem !important;
+        font-weight: 600 !important;
+        margin-bottom: 1rem !important;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
     }
     
-    /* Divider styling */
-    hr {
+    /* Progress stepper */
+    .progress-stepper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
         margin: 2rem 0;
-        border: none;
-        height: 2px;
-        background: linear-gradient(90deg, transparent 0%, #2d5aa0 50%, transparent 100%);
+        padding: 1.5rem;
+        background: white;
+        border-radius: 1rem;
+        border: 1px solid #e5e7eb;
     }
     
-    /* Expander styling */
-    .streamlit-expanderHeader {
-        font-weight: 600;
-        font-size: 1.1rem;
+    .step {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
     }
     
-    /* Remove Streamlit branding */
+    .step.active {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+    
+    .step.completed {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+    
+    .step.pending {
+        background: #f3f4f6;
+        color: #6b7280;
+    }
+    
+    /* Violation cards */
+    .violation-card {
+        background: white;
+        border: 1px solid #fecaca;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        border-left: 4px solid #ef4444;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    
+    .violation-card.high {
+        border-left-color: #ef4444;
+        background: #fef2f2;
+    }
+    
+    .violation-card.medium {
+        border-left-color: #f59e0b;
+        background: #fffbeb;
+        border-color: #fde68a;
+    }
+    
+    .violation-card.low {
+        border-left-color: #eab308;
+        background: #fefce8;
+        border-color: #fde047;
+    }
+    
+    /* Success card */
+    .success-card {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 1rem;
+        padding: 2rem;
+        text-align: center;
+        border-left: 4px solid #22c55e;
+        margin: 2rem 0;
+    }
+    
+    /* Metrics */
+    [data-testid="metric-container"] {
+        background: white !important;
+        border: 1px solid #e5e7eb !important;
+        border-radius: 0.75rem !important;
+        padding: 1.5rem !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+    }
+    
+    /* Button styling */
+    .stButton > button {
+        background: #2563eb !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 0.5rem !important;
+        padding: 0.75rem 1.5rem !important;
+        font-weight: 600 !important;
+        font-family: 'Inter', sans-serif !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .stButton > button:hover {
+        background: #1d4ed8 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+    }
+    
+    /* File uploader styling */
+    .stFileUploader > div > div {
+        border: 2px dashed #d1d5db !important;
+        border-radius: 0.75rem !important;
+        background: #f9fafb !important;
+        padding: 2rem !important;
+    }
+    
+    .stFileUploader > div > div:hover {
+        border-color: #2563eb !important;
+        background: #eff6ff !important;
+    }
+    
+    /* Hide Streamlit elements */
+    .stDeployButton {display: none;}
     footer {visibility: hidden;}
-    .stDeployButton {display:none;}
+    .stMainBlockContainer {padding-top: 0;}
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* Section headings */
+    .section-heading {
+        color: #111827 !important;
+        font-size: 1.875rem !important;
+        font-weight: 600 !important;
+        margin-bottom: 2rem !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -631,55 +757,77 @@ def main():
     """Main app"""
     init_session_state()
     
-    # Header navigation
-    col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
-    
-    with col1:
-        st.markdown("# 🚛 FleetAudit.io")
-    
-    with col2:
-        if st.button("Landing", key="nav_landing", use_container_width=True):
-            try:
-                st.switch_page("app")
-            except Exception as e:
-                st.error(f"Navigation error: {e}")
-    
-    with col3:
-        st.markdown("**App**")
-    
-    with col4:
-        if st.button("Backup", key="nav_backup", use_container_width=True):
-            try:
-                st.switch_page("2_Backup")
-            except Exception as e:
-                st.error(f"Navigation error: {e}")
-    
-    st.markdown("---")
-    
-    # Styled header
+    # Top Navigation Bar - Science.io style
     st.markdown("""
-    <div class="main-header">
-        <h1>🚛 FleetAudit.io - App</h1>
-        <p>AI-Powered Fleet Fraud Detection & Audit Platform</p>
+    <div class="top-navbar">
+        <div class="nav-logo">
+            🚛 FleetAudit.io
+        </div>
+        <div class="nav-links">
+            <a href="../app.py" class="nav-link">← Back to Home</a>
+            <a href="#" class="nav-link">Demo</a>
+            <a href="#" class="nav-link">Results</a>
+            <a href="#" class="nav-cta">Get Started</a>
+        </div>
     </div>
     """, unsafe_allow_html=True)
     
-    # Upload section
-    st.markdown("## 📁 Data Upload")
-    st.markdown("Upload your fleet data files to begin fraud detection analysis.")
+    # Progress Stepper
+    fuel_uploaded = st.session_state.fuel_data is not None
+    analysis_done = st.session_state.fraud_results is not None
     
-    col1, col2, col3 = st.columns(3, gap="medium")
+    st.markdown(f"""
+    <div class="content-container">
+        <div class="progress-stepper">
+            <div class="step {'completed' if fuel_uploaded else 'active'}">
+                <span>📁</span> 1. Upload Data
+            </div>
+            <div style="color: #d1d5db;">→</div>
+            <div class="step {'completed' if analysis_done else 'active' if fuel_uploaded else 'pending'}">
+                <span>🔍</span> 2. Run Analysis
+            </div>
+            <div style="color: #d1d5db;">→</div>
+            <div class="step {'completed' if analysis_done else 'pending'}">
+                <span>📊</span> 3. View Results
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # App header
+    st.markdown("""
+    <div class="content-container">
+        <div class="app-header">
+            <h1>🚛 FleetAudit.io - Fraud Detection</h1>
+            <p>Upload your fleet data and detect fraud patterns with AI-powered analysis</p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Upload section with Science.io styling
+    st.markdown("""
+    <div class="content-container">
+        <h2 class="section-heading">📁 Data Upload</h2>
+        <p style="text-align: center; color: #6b7280; font-size: 1.1rem; margin-bottom: 3rem;">Upload your fleet data files to begin fraud detection analysis</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns(3, gap="large")
     
     with col1:
+        st.markdown('<div class="upload-section">', unsafe_allow_html=True)
         upload_fuel_data()
+        st.markdown('</div>', unsafe_allow_html=True)
     
     with col2:
+        st.markdown('<div class="upload-section">', unsafe_allow_html=True)
         upload_gps_data()
+        st.markdown('</div>', unsafe_allow_html=True)
         
     with col3:
+        st.markdown('<div class="upload-section">', unsafe_allow_html=True)
         upload_job_data()
-    
-    st.markdown("---")
+        st.markdown('</div>', unsafe_allow_html=True)
     
     # Fraud detection
     detect_fraud()

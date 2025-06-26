@@ -25,189 +25,243 @@ try:
 except:
     pass  # Config already set
 
-# Custom CSS for landing page styling
+# Science.io-inspired CSS styling
 st.markdown("""
 <style>
-    /* Main theme colors */
-    .main {
-        padding-top: 1rem;
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    /* Global styling */
+    html, body, [class*="css"] {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
     
-    /* Hero section styling */
-    .hero-section {
-        background: linear-gradient(135deg, #1f4e79 0%, #2d5aa0 50%, #3d6bb5 100%);
-        padding: 4rem 2rem;
-        border-radius: 15px;
-        margin-bottom: 3rem;
-        text-align: center;
+    .main {
+        background: linear-gradient(to bottom, #f9fafb, #ffffff);
+        padding: 0;
+        max-width: none;
+    }
+    
+    /* Top Navigation Bar - Science.io style */
+    .top-navbar {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid #e5e7eb;
+        padding: 1rem 2rem;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: -1rem -1rem 2rem -1rem;
+    }
+    
+    .nav-logo {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+    }
+    
+    .nav-link {
+        color: #6b7280;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.3s ease;
+    }
+    
+    .nav-link:hover {
+        color: #2563eb;
+    }
+    
+    .nav-cta {
+        background: #2563eb;
         color: white;
-        box-shadow: 0 8px 32px rgba(31, 78, 121, 0.3);
+        padding: 0.5rem 1.5rem;
+        border-radius: 0.5rem;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .nav-cta:hover {
+        background: #1d4ed8;
+        transform: translateY(-1px);
+    }
+    
+    /* Content container */
+    .content-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 2rem;
+    }
+    
+    /* Hero section - Science.io style */
+    .hero-section {
+        text-align: center;
+        padding: 5rem 2rem;
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+        margin-bottom: 5rem;
     }
     
     .hero-section h1 {
-        color: white !important;
-        margin-bottom: 1rem;
-        font-size: 3.5rem;
-        font-weight: 800;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        color: #111827 !important;
+        font-size: 3.5rem !important;
+        font-weight: 700 !important;
+        margin-bottom: 1.5rem !important;
+        line-height: 1.1 !important;
     }
     
     .hero-section h2 {
-        color: #e8f4f8 !important;
-        font-size: 1.4rem;
-        margin-bottom: 2rem;
-        font-weight: 400;
-    }
-    
-    .hero-section p {
-        color: #b8dae8 !important;
-        font-size: 1.1rem;
-        margin-bottom: 2rem;
-        max-width: 800px;
+        color: #374151 !important;
+        font-size: 1.25rem !important;
+        font-weight: 400 !important;
+        margin-bottom: 2rem !important;
+        max-width: 600px;
         margin-left: auto;
         margin-right: auto;
     }
     
-    /* Feature cards */
+    .hero-cta {
+        background: #2563eb;
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 0.75rem;
+        border: none;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-block;
+        text-decoration: none;
+        margin-top: 1rem;
+    }
+    
+    .hero-cta:hover {
+        background: #1d4ed8;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3);
+    }
+    
+    /* Feature cards - Clean minimal style */
+    .features-section {
+        margin-bottom: 5rem;
+    }
+    
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
+    }
+    
     .feature-card {
         background: white;
         padding: 2rem;
-        border-radius: 12px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-        margin-bottom: 1.5rem;
-        border: 1px solid #e9ecef;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border-radius: 1rem;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
     
     .feature-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
     }
     
     .feature-card h3 {
-        color: #1f4e79;
-        margin-bottom: 1rem;
-        font-size: 1.3rem;
+        color: #111827 !important;
+        font-size: 1.25rem !important;
+        font-weight: 600 !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    .feature-card p {
+        color: #6b7280 !important;
+        line-height: 1.6 !important;
     }
     
     /* Demo section */
     .demo-section {
-        background: #f8f9fa;
-        padding: 3rem 2rem;
-        border-radius: 12px;
-        margin: 2rem 0;
-        border: 2px solid #e9ecef;
-    }
-    
-    .demo-header {
-        text-align: center;
-        margin-bottom: 2rem;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 1rem;
+        padding: 3rem;
+        margin: 3rem 0;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     }
     
     .demo-header h2 {
-        color: #1f4e79;
-        font-size: 2.2rem;
-        margin-bottom: 1rem;
-    }
-    
-    /* Violation cards for demo */
-    .violation-demo {
-        background: #fff5f5;
-        border: 1px solid #fed7d7;
-        border-radius: 8px;
-        padding: 1rem;
-        margin: 0.5rem 0;
-        border-left: 4px solid #e53e3e;
-    }
-    
-    .violation-demo.high {
-        border-left-color: #e53e3e;
-        background: #fff5f5;
-    }
-    
-    .violation-demo.medium {
-        border-left-color: #dd6b20;
-        background: #fffbf0;
-    }
-    
-    /* CTA Button */
-    .cta-button {
-        background: linear-gradient(90deg, #e53e3e 0%, #c53030 100%);
-        color: white;
-        padding: 1rem 2rem;
-        border-radius: 8px;
-        border: none;
-        font-size: 1.2rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        display: inline-block;
-        margin: 1rem;
-    }
-    
-    .cta-button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(229, 62, 62, 0.4);
-    }
-    
-    /* Pricing preview */
-    .pricing-preview {
-        background: white;
-        border: 2px solid #2d5aa0;
-        border-radius: 12px;
-        padding: 2rem;
+        color: #111827 !important;
+        font-size: 2rem !important;
+        font-weight: 600 !important;
         text-align: center;
-        margin: 2rem 0;
+        margin-bottom: 1rem !important;
+    }
+    
+    /* Pricing */
+    .pricing-section {
+        text-align: center;
+        margin: 4rem 0;
+    }
+    
+    .pricing-card {
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 1rem;
+        padding: 2rem;
+        max-width: 400px;
+        margin: 0 auto;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     }
     
     .price {
         font-size: 3rem;
-        font-weight: 800;
-        color: #1f4e79;
+        font-weight: 700;
+        color: #111827;
         margin: 1rem 0;
     }
     
-    /* Button styling */
+    /* Section headings */
+    .section-heading {
+        color: #111827 !important;
+        font-size: 2.25rem !important;
+        font-weight: 600 !important;
+        text-align: center;
+        margin-bottom: 3rem !important;
+    }
+    
+    /* Hide Streamlit elements */
+    .stDeployButton {display: none;}
+    footer {visibility: hidden;}
+    .stMainBlockContainer {padding-top: 0;}
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* Button overrides */
     .stButton > button {
-        background: linear-gradient(90deg, #1f4e79 0%, #2d5aa0 100%);
-        color: white;
-        border-radius: 8px;
-        border: none;
-        padding: 0.75rem 2rem;
-        font-weight: 600;
-        font-size: 1.1rem;
-        transition: all 0.3s ease;
-        width: 100%;
+        background: #2563eb !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 0.5rem !important;
+        padding: 0.75rem 1.5rem !important;
+        font-weight: 600 !important;
+        font-family: 'Inter', sans-serif !important;
+        transition: all 0.3s ease !important;
     }
     
     .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(31, 78, 121, 0.3);
-    }
-    
-    /* Remove Streamlit branding */
-    footer {visibility: hidden;}
-    .stDeployButton {display:none;}
-    
-    /* Clean navigation links */
-    .nav-link {
-        display: block;
-        padding: 0.5rem 0;
-        color: #1f4e79;
-        text-decoration: none;
-        cursor: pointer;
-        font-size: 1.1rem;
-    }
-    
-    .nav-link:hover {
-        color: #2d5aa0;
-        text-decoration: underline;
-    }
-    
-    .nav-current {
-        font-weight: bold;
-        color: #2d5aa0;
+        background: #1d4ed8 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -392,79 +446,75 @@ def init_global_session_state():
 def main():
     # Initialize session state first
     init_global_session_state()
-    # Header navigation
-    col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
     
-    with col1:
-        st.markdown("# 🚛 FleetAudit.io")
-    
-    with col2:
-        st.markdown("**Landing**")
-    
-    with col3:
-        if st.button("App", key="nav_app", use_container_width=True):
-            try:
-                st.session_state.current_page = 'app'
-                # Try different path formats for Streamlit Cloud
-                st.switch_page("1_Product")
-            except Exception as e:
-                st.error(f"Navigation error: {e}")
-    
-    with col4:
-        if st.button("Backup", key="nav_backup", use_container_width=True):
-            try:
-                st.session_state.current_page = 'backup'
-                # Try different path formats for Streamlit Cloud
-                st.switch_page("2_Backup")
-            except Exception as e:
-                st.error(f"Navigation error: {e}")
-    
-    st.markdown("---")
-    
-    # Hero Section
+    # Top Navigation Bar - Science.io style
     st.markdown("""
-    <div class="hero-section">
-        <h1>🚛 FleetAudit.io</h1>
-        <h2>Stop Fleet Fraud Before It Costs You Thousands</h2>
-        <p>AI-powered fraud detection that analyzes your fuel, GPS, and job data to uncover theft, misuse, and policy violations in minutes.</p>
+    <div class="top-navbar">
+        <div class="nav-logo">
+            🚛 FleetAudit.io
+        </div>
+        <div class="nav-links">
+            <a href="#" class="nav-link">Features</a>
+            <a href="#" class="nav-link">Pricing</a>
+            <a href="#" class="nav-link">Demo</a>
+            <a href="#" class="nav-cta" onclick="window.location.href='1_Product'">Try FleetAudit →</a>
+        </div>
     </div>
     """, unsafe_allow_html=True)
     
-    # Features Section
-    st.markdown("## Why FleetAudit.io?")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown("""
-        <div class="feature-card">
-            <h3>🔍 AI-Powered Detection</h3>
-            <p>Advanced algorithms detect fraud patterns humans miss - shared cards, ghost jobs, after-hours abuse, and more.</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown("""
-        <div class="feature-card">
-            <h3>💰 Immediate ROI</h3>
-            <p>Customers typically recover 10x their subscription cost in the first month by stopping ongoing fraud.</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col3:
-        st.markdown("""
-        <div class="feature-card">
-            <h3>📊 Professional Reports</h3>
-            <p>Generate detailed PDF reports with evidence for HR, management, and legal proceedings.</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Demo Section
+    # Hero Section - Science.io style
     st.markdown("""
-    <div class="demo-section">
-        <div class="demo-header">
-            <h2>🎯 See FleetAudit.io in Action</h2>
-            <p>Select a sample fleet below to see how our AI detects fraud and policy violations:</p>
+    <div class="content-container">
+        <div class="hero-section">
+            <h1>Stop Fleet Fraud Before It Costs You Thousands</h1>
+            <h2>AI-powered fraud detection that analyzes your fuel, GPS, and job data to uncover theft, misuse, and policy violations in minutes.</h2>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # CTA Button with navigation
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col2:
+        if st.button("🚀 Try FleetAudit Free", type="primary", use_container_width=True):
+            try:
+                st.switch_page("pages/1_Product.py")
+            except Exception as e:
+                try:
+                    st.switch_page("1_Product")
+                except Exception as e2:
+                    st.error(f"Navigation error: {e2}")
+    
+    # Features Section with Science.io styling
+    st.markdown("""
+    <div class="content-container">
+        <div class="features-section">
+            <h2 class="section-heading">Why FleetAudit.io?</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h3>🔍 AI-Powered Detection</h3>
+                    <p>Advanced algorithms detect fraud patterns humans miss - shared cards, ghost jobs, after-hours abuse, and more.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>💰 Immediate ROI</h3>
+                    <p>Customers typically recover 10x their subscription cost in the first month by stopping ongoing fraud.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>📊 Professional Reports</h3>
+                    <p>Generate detailed PDF reports with evidence for HR, management, and legal proceedings.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Demo Section with new styling
+    st.markdown("""
+    <div class="content-container">
+        <div class="demo-section">
+            <div class="demo-header">
+                <h2>🎯 See FleetAudit.io in Action</h2>
+                <p style="color: #6b7280; font-size: 1.1rem; margin-bottom: 2rem;">Select a sample fleet below to see how our AI detects fraud and policy violations:</p>
+            </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -493,53 +543,64 @@ def main():
             st.markdown(f"### 🚨 Fraud Detection Results: {selected_scenario}")
             display_demo_results(selected_scenario, demo_data[selected_scenario])
     
-    # Pricing Preview
-    st.markdown("---")
-    st.markdown("## 💳 Simple, Transparent Pricing")
-    
-    col1, col2, col3 = st.columns([1, 2, 1])
-    
-    with col2:
-        st.markdown("""
-        <div class="pricing-preview">
-            <h3>Professional Plan</h3>
-            <div class="price">$99<span style="font-size: 1rem; color: #666;">/month</span></div>
-            <p>✅ Unlimited fleet data analysis<br>
-            ✅ All fraud detection features<br>
-            ✅ PDF report generation<br>
-            ✅ Email alerts & notifications<br>
-            ✅ Priority support</p>
+    # Pricing Section with Science.io styling
+    st.markdown("""
+    <div class="content-container">
+        <div class="pricing-section">
+            <h2 class="section-heading">💳 Simple, Transparent Pricing</h2>
+            <div class="pricing-card">
+                <h3 style="color: #111827; font-size: 1.5rem; margin-bottom: 1rem;">Professional Plan</h3>
+                <div class="price">$99<span style="font-size: 1rem; color: #6b7280; font-weight: 400;">/month</span></div>
+                <div style="text-align: left; color: #374151; line-height: 1.8;">
+                    ✅ Unlimited fleet data analysis<br>
+                    ✅ All fraud detection features<br>
+                    ✅ PDF report generation<br>
+                    ✅ Email alerts & notifications<br>
+                    ✅ Priority support
+                </div>
+            </div>
         </div>
-        """, unsafe_allow_html=True)
-        
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Start trial button
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col2:
         if st.button("🚀 Start Free Trial", type="primary", use_container_width=True):
             st.balloons()
             st.success("🎉 Ready to start your free trial! Subscription system coming soon.")
     
-    # Call to Action
-    st.markdown("---")
+    # Call to Action with Science.io styling
     st.markdown("""
-    <div style="text-align: center; padding: 2rem;">
-        <h2>Ready to Stop Fleet Fraud?</h2>
-        <p style="font-size: 1.2rem; margin-bottom: 2rem;">Join hundreds of fleet managers who've recovered thousands in stolen fuel and time.</p>
+    <div class="content-container">
+        <div style="text-align: center; padding: 4rem 2rem; background: #f9fafb; border-radius: 1rem; margin: 3rem 0;">
+            <h2 style="color: #111827; font-size: 2rem; font-weight: 600; margin-bottom: 1rem;">Ready to Stop Fleet Fraud?</h2>
+            <p style="color: #6b7280; font-size: 1.2rem; margin-bottom: 0;">Join hundreds of fleet managers who've recovered thousands in stolen fuel and time.</p>
+        </div>
     </div>
     """, unsafe_allow_html=True)
     
-    # Footer
-    st.markdown("---")
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown("**FleetAudit.io**")
-        st.markdown("AI-powered fleet fraud detection")
-    
-    with col2:
-        st.markdown("**Features**")
-        st.markdown("• Shared card detection\n• Ghost job analysis\n• After-hours monitoring\n• GPS cross-referencing")
-    
-    with col3:
-        st.markdown("**Support**")
-        st.markdown("• 24/7 customer support\n• Implementation assistance\n• Training & onboarding")
+    # Clean Footer
+    st.markdown("""
+    <div class="content-container">
+        <div style="border-top: 1px solid #e5e7eb; padding: 3rem 0; margin-top: 4rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; color: #6b7280;">
+                <div>
+                    <h4 style="color: #111827; font-weight: 600; margin-bottom: 1rem;">FleetAudit.io</h4>
+                    <p>AI-powered fleet fraud detection</p>
+                </div>
+                <div>
+                    <h4 style="color: #111827; font-weight: 600; margin-bottom: 1rem;">Features</h4>
+                    <p>• Shared card detection<br>• Ghost job analysis<br>• After-hours monitoring<br>• GPS cross-referencing</p>
+                </div>
+                <div>
+                    <h4 style="color: #111827; font-weight: 600; margin-bottom: 1rem;">Support</h4>
+                    <p>• 24/7 customer support<br>• Implementation assistance<br>• Training & onboarding</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
