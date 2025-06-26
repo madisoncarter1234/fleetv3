@@ -323,7 +323,48 @@ st.markdown("""
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     
-    /* Button overrides */
+    /* Navigation button styling */
+    div[data-testid="column"]:nth-child(2) .stButton > button,
+    div[data-testid="column"]:nth-child(3) .stButton > button,
+    div[data-testid="column"]:nth-child(4) .stButton > button {
+        background: transparent !important;
+        color: #6b7280 !important;
+        border: none !important;
+        border-radius: 0.375rem !important;
+        padding: 0.5rem 1rem !important;
+        font-weight: 500 !important;
+        font-family: 'Inter', sans-serif !important;
+        transition: all 0.3s ease !important;
+        font-size: 0.9rem !important;
+    }
+    
+    div[data-testid="column"]:nth-child(2) .stButton > button:hover,
+    div[data-testid="column"]:nth-child(3) .stButton > button:hover,
+    div[data-testid="column"]:nth-child(4) .stButton > button:hover {
+        background: #f3f4f6 !important;
+        color: #2563eb !important;
+        transform: none !important;
+    }
+    
+    /* Primary CTA button styling */
+    div[data-testid="column"]:nth-child(5) .stButton > button {
+        background: #2563eb !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 0.5rem !important;
+        padding: 0.75rem 1.5rem !important;
+        font-weight: 600 !important;
+        font-family: 'Inter', sans-serif !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    div[data-testid="column"]:nth-child(5) .stButton > button:hover {
+        background: #1d4ed8 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+    }
+    
+    /* Regular button styling for other buttons */
     .stButton > button {
         background: #2563eb !important;
         color: white !important;
@@ -339,23 +380,6 @@ st.markdown("""
         background: #1d4ed8 !important;
         transform: translateY(-1px) !important;
         box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
-    }
-    
-    /* Ensure nav button styling */
-    div[style*="position: fixed; top: 1rem; right: 2rem"] .stButton > button {
-        background: #2563eb !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 0.5rem !important;
-        padding: 0.5rem 1.5rem !important;
-        font-weight: 600 !important;
-        font-family: 'Inter', sans-serif !important;
-        transition: all 0.3s ease !important;
-    }
-    
-    div[style*="position: fixed; top: 1rem; right: 2rem"] .stButton > button:hover {
-        background: #1d4ed8 !important;
-        transform: translateY(-1px) !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -541,37 +565,45 @@ def main():
     # Initialize session state first
     init_global_session_state()
     
-    # Full navbar HTML with space for button
-    st.markdown("""
-    <div class="top-navbar">
-        <div class="nav-logo">
-            🚛 FleetAudit.io
-        </div>
-        <div class="nav-links" style="margin-right: 180px;">
-            <a href="#features" class="nav-link" onclick="smoothScrollTo('features'); return false;">Features</a>
-            <a href="#demo" class="nav-link" onclick="smoothScrollTo('demo'); return false;">Demo</a>
-            <a href="#pricing" class="nav-link" onclick="smoothScrollTo('pricing'); return false;">Pricing</a>
-        </div>
-    </div>
-    <div class="navbar-spacer"></div>
-    """, unsafe_allow_html=True)
+    # Pure Streamlit navbar using columns
+    navbar_col1, navbar_col2, navbar_col3, navbar_col4, navbar_col5 = st.columns([2, 1, 1, 1, 1.5])
     
-    # Position Streamlit button to appear IN the navbar
-    st.markdown("""
-    <style>
-        .navbar-button {
-            position: fixed !important;
-            top: 18px !important;
-            right: 20px !important;
-            z-index: 1001 !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
+    with navbar_col1:
+        st.markdown("### 🚛 FleetAudit.io")
     
-    st.markdown('<div class="navbar-button">', unsafe_allow_html=True)
-    if st.button("Try FleetAudit →", type="primary", key="nav_button"):
-        st.switch_page("pages/1_Product.py")
-    st.markdown('</div>', unsafe_allow_html=True)
+    with navbar_col2:
+        if st.button("Features", key="nav_features"):
+            st.session_state.scroll_to = "features"
+    
+    with navbar_col3:
+        if st.button("Demo", key="nav_demo"):
+            st.session_state.scroll_to = "demo"
+    
+    with navbar_col4:
+        if st.button("Pricing", key="nav_pricing"):
+            st.session_state.scroll_to = "pricing"
+    
+    with navbar_col5:
+        if st.button("Try FleetAudit →", type="primary", key="nav_button"):
+            st.switch_page("pages/1_Product.py")
+    
+    st.markdown("---")
+    
+    # Handle scrolling if navigation was clicked
+    if st.session_state.get('scroll_to'):
+        target = st.session_state.scroll_to
+        st.markdown(f"""
+        <script>
+            setTimeout(function() {{
+                const element = document.getElementById('{target}');
+                if (element) {{
+                    element.scrollIntoView({{ behavior: 'smooth', block: 'start' }});
+                }}
+            }}, 100);
+        </script>
+        """, unsafe_allow_html=True)
+        # Clear the scroll target
+        del st.session_state.scroll_to
     
     # Hero Section - Science.io style
     st.markdown("""
