@@ -260,12 +260,21 @@ st.markdown("""
         border: 2px dashed #d1d5db !important;
         border-radius: 0.75rem !important;
         background: #f9fafb !important;
-        padding: 2rem !important;
+        padding: 1.5rem !important;
     }
     
     .stFileUploader > div > div:hover {
         border-color: #2563eb !important;
         background: #eff6ff !important;
+    }
+    
+    /* Reduce file upload text size */
+    .stFileUploader label {
+        font-size: 0.875rem !important;
+    }
+    
+    .stFileUploader > div > div > div > small {
+        font-size: 0.75rem !important;
     }
     
     /* Hide Streamlit elements */
@@ -298,14 +307,13 @@ def init_session_state():
 
 def upload_fuel_data():
     """Simple pandas-based fuel data upload"""
-    st.markdown("### ⛽ Fuel Data Upload")
-    with st.container():
-        fuel_file = st.file_uploader(
-            "Upload Fuel CSV", 
-            type=['csv'], 
-            key="fuel_upload",
-            help="Upload fuel card transaction data"
-        )
+    st.markdown('<h3 style="color: #111827; font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">⛽ Fuel Data Upload</h3>', unsafe_allow_html=True)
+    fuel_file = st.file_uploader(
+        "Upload Fuel CSV", 
+        type=['csv'], 
+        key="fuel_upload",
+        help="Upload fuel card transaction data"
+    )
     
     if fuel_file is not None:
         try:
@@ -372,14 +380,13 @@ def upload_fuel_data():
 
 def upload_gps_data():
     """Simple pandas-based GPS data upload"""
-    st.markdown("### 🗺️ GPS Data Upload")
-    with st.container():
-        gps_file = st.file_uploader(
-            "Upload GPS CSV", 
-            type=['csv'], 
-            key="gps_upload",
-            help="Upload GPS tracking data"
-        )
+    st.markdown('<h3 style="color: #111827; font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">🗺️ GPS Data Upload</h3>', unsafe_allow_html=True)
+    gps_file = st.file_uploader(
+        "Upload GPS CSV", 
+        type=['csv'], 
+        key="gps_upload",
+        help="Upload GPS tracking data"
+    )
     
     if gps_file is not None:
         try:
@@ -403,14 +410,13 @@ def upload_gps_data():
 
 def upload_job_data():
     """Simple pandas-based job data upload"""
-    st.markdown("### 📋 Job Data Upload")
-    with st.container():
-        job_file = st.file_uploader(
-            "Upload Job CSV", 
-            type=['csv'], 
-            key="job_upload",
-            help="Upload job scheduling data"
-        )
+    st.markdown('<h3 style="color: #111827; font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">📋 Job Data Upload</h3>', unsafe_allow_html=True)
+    job_file = st.file_uploader(
+        "Upload Job CSV", 
+        type=['csv'], 
+        key="job_upload",
+        help="Upload job scheduling data"
+    )
     
     if job_file is not None:
         try:
@@ -720,38 +726,42 @@ def export_reports():
     st.markdown("### 📄 Export Reports")
     st.markdown("Generate professional reports for management and compliance purposes.")
     
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("📥 Download PDF Report", use_container_width=True):
-            if not REPORTLAB_AVAILABLE:
-                st.error("📄 PDF generation requires reportlab. Install it to enable PDF exports.")
-            else:
-                with st.spinner("Generating PDF report..."):
-                    try:
-                        pdf_path = generate_pdf_report()
-                        
-                        if pdf_path:
-                            with open(pdf_path, "rb") as pdf_file:
-                                st.download_button(
-                                    label="📥 Download Report",
-                                    data=pdf_file.read(),
-                                    file_name=f"fraud_report_{datetime.now().strftime('%Y%m%d')}.pdf",
-                                    mime="application/pdf",
-                                    use_container_width=True
-                                )
-                            
-                            # Clean up temp file
-                            os.unlink(pdf_path)
-                            
-                    except Exception as e:
-                        st.error(f"PDF generation failed: {str(e)}")
-    
-    with col2:
-        recipient_email = st.text_input("📧 Email Report To:", placeholder="manager@company.com")
+    # Create a container for better alignment
+    with st.container():
+        col1, col2 = st.columns(2, gap="medium")
         
-        if st.button("📧 Send Email Report", use_container_width=True) and recipient_email:
-            st.info("🔧 Email functionality coming soon - use PDF download for now")
+        with col1:
+            st.markdown('<div style="min-height: 80px;">', unsafe_allow_html=True)
+            if st.button("📥 Download PDF Report", use_container_width=True, key="pdf_download_btn"):
+                if not REPORTLAB_AVAILABLE:
+                    st.error("📄 PDF generation requires reportlab. Install it to enable PDF exports.")
+                else:
+                    with st.spinner("Generating PDF report..."):
+                        try:
+                            pdf_path = generate_pdf_report()
+                            
+                            if pdf_path:
+                                with open(pdf_path, "rb") as pdf_file:
+                                    st.download_button(
+                                        label="📥 Download Report",
+                                        data=pdf_file.read(),
+                                        file_name=f"fraud_report_{datetime.now().strftime('%Y%m%d')}.pdf",
+                                        mime="application/pdf",
+                                        use_container_width=True
+                                    )
+                                
+                                # Clean up temp file
+                                os.unlink(pdf_path)
+                                
+                        except Exception as e:
+                            st.error(f"PDF generation failed: {str(e)}")
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        with col2:
+            recipient_email = st.text_input("📧 Email Report To:", placeholder="manager@company.com", key="email_input")
+            
+            if st.button("📧 Send Email Report", use_container_width=True, key="email_send_btn") and recipient_email:
+                st.info("🔧 Email functionality coming soon - use PDF download for now")
 
 def main():
     """Main app"""
@@ -764,10 +774,7 @@ def main():
             🚛 FleetAudit.io
         </div>
         <div class="nav-links">
-            <a href="../app.py" class="nav-link">← Back to Home</a>
-            <a href="#" class="nav-link">Demo</a>
-            <a href="#" class="nav-link">Results</a>
-            <a href="#" class="nav-cta">Get Started</a>
+            <a href="/" class="nav-link">← Back to Home</a>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -815,19 +822,22 @@ def main():
     col1, col2, col3 = st.columns(3, gap="large")
     
     with col1:
-        st.markdown('<div class="upload-section">', unsafe_allow_html=True)
-        upload_fuel_data()
-        st.markdown('</div>', unsafe_allow_html=True)
+        with st.container():
+            st.markdown('<div class="upload-section">', unsafe_allow_html=True)
+            upload_fuel_data()
+            st.markdown('</div>', unsafe_allow_html=True)
     
     with col2:
-        st.markdown('<div class="upload-section">', unsafe_allow_html=True)
-        upload_gps_data()
-        st.markdown('</div>', unsafe_allow_html=True)
+        with st.container():
+            st.markdown('<div class="upload-section">', unsafe_allow_html=True)
+            upload_gps_data()
+            st.markdown('</div>', unsafe_allow_html=True)
         
     with col3:
-        st.markdown('<div class="upload-section">', unsafe_allow_html=True)
-        upload_job_data()
-        st.markdown('</div>', unsafe_allow_html=True)
+        with st.container():
+            st.markdown('<div class="upload-section">', unsafe_allow_html=True)
+            upload_job_data()
+            st.markdown('</div>', unsafe_allow_html=True)
     
     # Fraud detection
     detect_fraud()

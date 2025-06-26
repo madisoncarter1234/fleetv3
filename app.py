@@ -308,12 +308,12 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
     }
     
-    /* Position the nav button */
-    button[key="nav_app_button"] {
-        position: absolute !important;
-        top: 1rem !important;
-        right: 2rem !important;
-        z-index: 1001 !important;
+    /* Integrated nav button styling */
+    .nav-button-container {
+        position: absolute;
+        top: 1rem;
+        right: 2rem;
+        z-index: 1001;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -499,26 +499,26 @@ def main():
     # Initialize session state first
     init_global_session_state()
     
-    # Top Navigation Bar - Science.io style with smooth scrolling
-    st.markdown("""
-    <div class="top-navbar">
-        <div class="nav-logo">
-            🚛 FleetAudit.io
-        </div>
-        <div class="nav-links">
-            <a href="#features" class="nav-link" onclick="smoothScrollTo('features'); return false;">Features</a>
-            <a href="#demo" class="nav-link" onclick="smoothScrollTo('demo'); return false;">Demo</a>
-            <a href="#pricing" class="nav-link" onclick="smoothScrollTo('pricing'); return false;">Pricing</a>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    # Create columns for navbar layout
+    nav_col1, nav_col2 = st.columns([5, 1])
     
-    # Add a separate Try FleetAudit button below the navbar
-    with st.container():
-        col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
-        with col5:
-            if st.button("Try FleetAudit →", type="primary", key="nav_app_button"):
-                st.switch_page("pages/1_Product.py")
+    with nav_col1:
+        st.markdown("""
+        <div class="top-navbar" style="position: relative;">
+            <div class="nav-logo">
+                🚛 FleetAudit.io
+            </div>
+            <div class="nav-links">
+                <a href="#features" class="nav-link" onclick="smoothScrollTo('features'); return false;">Features</a>
+                <a href="#demo" class="nav-link" onclick="smoothScrollTo('demo'); return false;">Demo</a>
+                <a href="#pricing" class="nav-link" onclick="smoothScrollTo('pricing'); return false;">Pricing</a>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with nav_col2:
+        if st.button("Try FleetAudit →", type="primary", key="nav_app_button"):
+            st.switch_page("pages/1_Product.py")
     
     # Hero Section - Science.io style
     st.markdown("""
