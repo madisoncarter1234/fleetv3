@@ -767,17 +767,24 @@ def main():
     """Main app"""
     init_session_state()
     
-    # Top Navigation Bar - Science.io style
+    # Full navbar HTML
     st.markdown("""
     <div class="top-navbar">
         <div class="nav-logo">
             🚛 FleetAudit.io
         </div>
         <div class="nav-links">
-            <a href="/" class="nav-link">← Back to Home</a>
+            <!-- Back to Home will be a button -->
         </div>
     </div>
+    <div class="navbar-spacer"></div>
     """, unsafe_allow_html=True)
+    
+    # Streamlit button for back to home
+    col1, col2 = st.columns([5, 1])
+    with col2:
+        if st.button("← Back to Home", type="secondary", key="back_home_button"):
+            st.switch_page("app.py")
     
     # Progress Stepper
     fuel_uploaded = st.session_state.fuel_data is not None

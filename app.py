@@ -556,11 +556,11 @@ def main():
     <div class="navbar-spacer"></div>
     """, unsafe_allow_html=True)
     
-    # Streamlit button positioned to appear IN the navbar
-    st.markdown('<div style="position: fixed; top: 1rem; right: 2rem; z-index: 1001;">', unsafe_allow_html=True)
-    if st.button("Try FleetAudit →", type="primary", key="nav_button"):
-        st.switch_page("pages/1_Product.py")
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Streamlit button positioned at top-right
+    col1, col2 = st.columns([5, 1])
+    with col2:
+        if st.button("Try FleetAudit →", type="primary", key="nav_button"):
+            st.switch_page("pages/1_Product.py")
     
     # Hero Section - Science.io style
     st.markdown("""
