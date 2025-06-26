@@ -541,29 +541,30 @@ def main():
     # Initialize session state first
     init_global_session_state()
     
-    # Create navbar with integrated button
-    nav_col1, nav_col2 = st.columns([6, 1])
+    # Navigation with columns - navbar and button
+    col1, col2 = st.columns([5, 1])
     
-    with nav_col1:
+    with col1:
         st.markdown("""
-        <div style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid #e5e7eb; padding: 1rem 2rem; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; display: flex; justify-content: space-between; align-items: center;">
+        <div class="top-navbar" style="width: 100vw; margin-left: calc(-50vw + 50%); position: sticky;">
             <div class="nav-logo">
                 🚛 FleetAudit.io
             </div>
-            <div class="nav-links">
+            <div class="nav-links" style="margin-right: 200px;">
                 <a href="#features" class="nav-link" onclick="smoothScrollTo('features'); return false;">Features</a>
                 <a href="#demo" class="nav-link" onclick="smoothScrollTo('demo'); return false;">Demo</a>
                 <a href="#pricing" class="nav-link" onclick="smoothScrollTo('pricing'); return false;">Pricing</a>
             </div>
         </div>
-        <div class="navbar-spacer"></div>
         """, unsafe_allow_html=True)
     
-    with nav_col2:
-        st.markdown('<div style="position: fixed; top: 1rem; right: 2rem; z-index: 1001;">', unsafe_allow_html=True)
+    with col2:
+        st.markdown('<div style="position: absolute; top: 1rem; right: 2rem; z-index: 1001;">', unsafe_allow_html=True)
         if st.button("Try FleetAudit →", type="primary", key="nav_app_button"):
             st.switch_page("pages/1_Product.py")
         st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.markdown('<div class="navbar-spacer"></div>', unsafe_allow_html=True)
     
     # Hero Section - Science.io style
     st.markdown("""
