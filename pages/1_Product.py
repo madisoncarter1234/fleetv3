@@ -773,24 +773,35 @@ def main():
     """Main app"""
     init_session_state()
     
-    # Full navbar HTML
+    # Full navbar HTML with space for button
     st.markdown("""
     <div class="top-navbar">
         <div class="nav-logo">
             🚛 FleetAudit.io
         </div>
-        <div class="nav-links">
+        <div class="nav-links" style="margin-right: 180px;">
             <!-- Back to Home will be a button -->
         </div>
     </div>
     <div class="navbar-spacer"></div>
     """, unsafe_allow_html=True)
     
-    # Streamlit button for back to home
-    col1, col2 = st.columns([5, 1])
-    with col2:
-        if st.button("← Back to Home", type="secondary", key="back_home_button"):
-            st.switch_page("app.py")
+    # Position Streamlit button to appear IN the navbar
+    st.markdown("""
+    <style>
+        .navbar-button {
+            position: fixed !important;
+            top: 18px !important;
+            right: 20px !important;
+            z-index: 1001 !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    st.markdown('<div class="navbar-button">', unsafe_allow_html=True)
+    if st.button("← Back to Home", type="secondary", key="back_home_button"):
+        st.switch_page("app.py")
+    st.markdown('</div>', unsafe_allow_html=True)
     
     # Progress Stepper
     fuel_uploaded = st.session_state.fuel_data is not None
