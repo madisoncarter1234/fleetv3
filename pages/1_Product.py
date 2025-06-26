@@ -53,13 +53,19 @@ st.markdown("""
         backdrop-filter: blur(10px);
         border-bottom: 1px solid #e5e7eb;
         padding: 1rem 2rem;
-        position: sticky;
+        position: fixed;
         top: 0;
+        left: 0;
+        right: 0;
         z-index: 1000;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin: -1rem -1rem 2rem -1rem;
+    }
+    
+    /* Spacer for fixed navbar */
+    .navbar-spacer {
+        height: 70px;
     }
     
     .nav-logo {
