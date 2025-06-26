@@ -541,28 +541,26 @@ def main():
     # Initialize session state first
     init_global_session_state()
     
-    # Navbar in columns so the button can be a real Streamlit button
-    col1, col2 = st.columns([5, 1])
-    
-    with col1:
-        st.markdown("""
-        <div class="top-navbar">
-            <div class="nav-logo">
-                🚛 FleetAudit.io
-            </div>
-            <div class="nav-links">
-                <a href="#features" class="nav-link" onclick="smoothScrollTo('features'); return false;">Features</a>
-                <a href="#demo" class="nav-link" onclick="smoothScrollTo('demo'); return false;">Demo</a>
-                <a href="#pricing" class="nav-link" onclick="smoothScrollTo('pricing'); return false;">Pricing</a>
-            </div>
+    # Full navbar HTML
+    st.markdown("""
+    <div class="top-navbar">
+        <div class="nav-logo">
+            🚛 FleetAudit.io
         </div>
-        """, unsafe_allow_html=True)
+        <div class="nav-links">
+            <a href="#features" class="nav-link" onclick="smoothScrollTo('features'); return false;">Features</a>
+            <a href="#demo" class="nav-link" onclick="smoothScrollTo('demo'); return false;">Demo</a>
+            <a href="#pricing" class="nav-link" onclick="smoothScrollTo('pricing'); return false;">Pricing</a>
+        </div>
+    </div>
+    <div class="navbar-spacer"></div>
+    """, unsafe_allow_html=True)
     
-    with col2:
-        if st.button("Try FleetAudit →", type="primary", key="nav_button"):
-            st.switch_page("pages/1_Product.py")
-    
-    st.markdown('<div class="navbar-spacer"></div>', unsafe_allow_html=True)
+    # Streamlit button positioned to appear IN the navbar
+    st.markdown('<div style="position: fixed; top: 1rem; right: 2rem; z-index: 1001;">', unsafe_allow_html=True)
+    if st.button("Try FleetAudit →", type="primary", key="nav_button"):
+        st.switch_page("pages/1_Product.py")
+    st.markdown('</div>', unsafe_allow_html=True)
     
     # Hero Section - Science.io style
     st.markdown("""
