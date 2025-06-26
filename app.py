@@ -341,15 +341,10 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
     }
     
-    /* Hide the trigger button */
-    button[key="nav_trigger"] {
-        position: absolute !important;
-        top: -9999px !important;
-        left: -9999px !important;
-        width: 1px !important;
-        height: 1px !important;
-        opacity: 0 !important;
-        pointer-events: none !important;
+    /* Additional hiding for navigation trigger */
+    .nav-trigger-hidden {
+        display: none !important;
+        visibility: hidden !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -552,8 +547,11 @@ def main():
     """, unsafe_allow_html=True)
     
     # Hidden button for navigation (triggered by nav CTA)
-    if st.button("", key="nav_trigger", type="primary"):
-        st.switch_page("pages/1_Product.py")
+    with st.container():
+        st.markdown('<div class="nav-trigger-hidden" style="position: absolute; top: -9999px; left: -9999px; width: 0; height: 0; overflow: hidden;">', unsafe_allow_html=True)
+        if st.button("Navigate", key="nav_trigger", type="primary"):
+            st.switch_page("pages/1_Product.py")
+        st.markdown('</div>', unsafe_allow_html=True)
     
     # JavaScript to connect the nav button to Streamlit button
     st.markdown("""
@@ -563,11 +561,13 @@ def main():
             if (tryBtn) {
                 tryBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    // Find the button by its data-testid
-                    const triggerBtn = document.querySelector('button[kind="primary"]');
-                    if (triggerBtn && triggerBtn.textContent === '') {
-                        triggerBtn.click();
-                    }
+                    // Find the navigation trigger button
+                    const buttons = document.querySelectorAll('button');
+                    buttons.forEach(button => {
+                        if (button.textContent.includes('Navigate')) {
+                            button.click();
+                        }
+                    });
                 });
             }
         }, 500);
