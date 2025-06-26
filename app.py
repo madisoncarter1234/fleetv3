@@ -342,11 +342,14 @@ st.markdown("""
     }
     
     /* Hide the trigger button */
-    button:has-text("hidden_nav"), 
-    div[data-testid="stButton"]:has(button:has-text("hidden_nav")) {
-        display: none !important;
+    button[key="nav_trigger"] {
         position: absolute !important;
         top: -9999px !important;
+        left: -9999px !important;
+        width: 1px !important;
+        height: 1px !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -549,22 +552,25 @@ def main():
     """, unsafe_allow_html=True)
     
     # Hidden button for navigation (triggered by nav CTA)
-    if st.button("hidden_nav", key="nav_trigger", type="primary", label_visibility="hidden"):
+    if st.button("", key="nav_trigger", type="primary"):
         st.switch_page("pages/1_Product.py")
     
     # JavaScript to connect the nav button to Streamlit button
     st.markdown("""
     <script>
-        document.getElementById('tryFleetAuditBtn').addEventListener('click', function(e) {
-            e.preventDefault();
-            // Find and click the hidden Streamlit button
-            const buttons = document.querySelectorAll('button');
-            buttons.forEach(button => {
-                if (button.innerText.includes('hidden_nav')) {
-                    button.click();
-                }
-            });
-        });
+        setTimeout(function() {
+            const tryBtn = document.getElementById('tryFleetAuditBtn');
+            if (tryBtn) {
+                tryBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // Find the button by its data-testid
+                    const triggerBtn = document.querySelector('button[kind="primary"]');
+                    if (triggerBtn && triggerBtn.textContent === '') {
+                        triggerBtn.click();
+                    }
+                });
+            }
+        }, 500);
     </script>
     """, unsafe_allow_html=True)
     
