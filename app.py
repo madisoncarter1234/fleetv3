@@ -15,25 +15,23 @@ except:
     pass
 
 # Page config with error handling
-try:
-    st.set_page_config(
-        page_title="FleetAudit.io - Fleet Fraud Detection",
-        page_icon="🚛",
-        layout="wide",
-        initial_sidebar_state="collapsed"
-    )
-except:
-    pass  # Config already set
+st.set_page_config(
+    page_title="FleetAudit.io - Fleet Fraud Detection", 
+    page_icon="🚛",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
-# Hides the hamburger menu and Streamlit watermark
-hide_streamlit_style = """
-    <style>
-    [data-testid="collapsedControl"] {display: none}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    </style>
-"""
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+st.markdown(
+    """
+<style>
+    [data-testid="collapsedControl"] {
+        display: none
+    }
+</style>
+""",
+    unsafe_allow_html=True,
+)
 
 # Science.io-inspired CSS styling
 st.markdown("""
