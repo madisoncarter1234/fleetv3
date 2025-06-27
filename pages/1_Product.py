@@ -47,68 +47,6 @@ st.markdown("""
         max-width: none;
     }
     
-    /* Top Navigation Bar - Science.io style */
-    .top-navbar {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid #e5e7eb;
-        padding: 1rem 2rem;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 1000;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    /* Spacer for fixed navbar */
-    .navbar-spacer {
-        height: 70px;
-    }
-    
-    .nav-logo {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #1f2937;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    
-    .nav-links {
-        display: flex;
-        align-items: center;
-        gap: 2rem;
-    }
-    
-    .nav-link {
-        color: #6b7280;
-        text-decoration: none;
-        font-weight: 500;
-        transition: color 0.3s ease;
-    }
-    
-    .nav-link:hover {
-        color: #2563eb;
-    }
-    
-    .nav-cta {
-        background: #2563eb;
-        color: white;
-        padding: 0.5rem 1.5rem;
-        border-radius: 0.5rem;
-        text-decoration: none;
-        font-weight: 600;
-        transition: all 0.3s ease;
-    }
-    
-    .nav-cta:hover {
-        background: #1d4ed8;
-        transform: translateY(-1px);
-    }
-    
     /* Content container */
     .content-container {
         max-width: 1200px;
