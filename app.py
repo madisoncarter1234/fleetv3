@@ -505,37 +505,70 @@ def init_global_session_state():
     if 'current_page' not in st.session_state:
         st.session_state.current_page = 'landing'
 
+def navbar():
+    st.markdown("##", unsafe_allow_html=True)  # spacer
+    cols = st.columns([1, 4, 1, 1, 1, 1])  # Added space for CTA
+
+    with cols[0]:
+        st.markdown("### 🚚 FleetAudit", unsafe_allow_html=True)
+    with cols[1]:
+        pass
+    with cols[2]:
+        if st.button("Features"):
+            st.session_state.scroll_to = "features"
+    with cols[3]:
+        if st.button("Demo"):
+            st.session_state.scroll_to = "demo"
+    with cols[4]:
+        if st.button("Pricing"):
+            st.session_state.scroll_to = "pricing"
+    with cols[5]:
+        st.markdown(
+            """
+            <style>
+            .blue-button > button {
+                background-color: #2563eb;
+                color: white;
+                font-weight: 600;
+                border-radius: 6px;
+                padding: 0.5rem 1.25rem;
+            }
+            .blue-button > button:hover {
+                background-color: #1d4ed8;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+        with st.container():
+            cta = st.container()
+            with cta:
+                if st.button("Try FleetAudit", key="cta"):
+                    st.switch_page("pages/1_Product.py")
+        st.markdown('<div class="blue-button"></div>', unsafe_allow_html=True)
+
 def main():
     # Initialize session state first
     init_global_session_state()
     
-    # Navbar layout
-    col1, col2, col3, col4, col5 = st.columns([3, 1, 1, 1, 1])
-    with col1:
-        st.markdown("### 🚛 FleetAudit", unsafe_allow_html=True)
-    with col2:
-        st.button("Features")
-    with col3:
-        st.button("Demo")
-    with col4:
-        st.button("Pricing")
-    with col5:
-        if st.button("Try FleetAudit"):
-            st.switch_page("pages/1_Product.py")
+    # Call the navbar function
+    navbar()
     
-    # Button styling
-    st.markdown("<style>div.stButton > button { margin-top: 20px; }</style>", unsafe_allow_html=True)
-    
-    st.markdown(
-        """
-        <style>
-            .block-container {
-                padding-top: 4rem;
-            }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+    # Handle scrolling if navigation was clicked
+    if st.session_state.get('scroll_to'):
+        target = st.session_state.scroll_to
+        st.markdown(f"""
+        <script>
+            setTimeout(function() {{
+                const element = document.getElementById('{target}');
+                if (element) {{
+                    element.scrollIntoView({{ behavior: 'smooth', block: 'start' }});
+                }}
+            }}, 100);
+        </script>
+        """, unsafe_allow_html=True)
+        # Clear the scroll target
+        del st.session_state.scroll_to
     
     st.markdown("---")
     
