@@ -312,12 +312,18 @@ st.markdown("""
         font-weight: 600 !important;
         font-family: 'Inter', sans-serif !important;
         transition: all 0.3s ease !important;
+        position: static !important;
     }
     
     .stButton > button:hover {
         background: #1d4ed8 !important;
         transform: translateY(-1px) !important;
         box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+    }
+    
+    /* Force all buttons to stay in normal flow */
+    .stButton {
+        position: static !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -522,7 +528,7 @@ def main():
             st.session_state.scroll_to = "pricing"
     
     with navbar_col5:
-        if st.button("Try FleetAudit →", type="primary", key="nav_button"):
+        if st.button("Try FleetAudit →", type="primary", key="try_app_button"):
             st.switch_page("pages/1_Product.py")
     
     st.markdown("---")

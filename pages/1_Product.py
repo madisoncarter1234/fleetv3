@@ -718,7 +718,7 @@ def main():
         st.markdown("### 🚛 FleetAudit.io")
     
     with navbar_col2:
-        if st.button("← Back to Home", key="back_home_button"):
+        if st.button("← Back to Home", key="home_nav_button"):
             st.switch_page("app.py")
     
     st.markdown("---")
