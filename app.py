@@ -10,7 +10,9 @@ st.set_page_config(
 st.markdown("""
     <style>
     [data-testid="stSidebar"] {display: none !important;}
-    [data-testid="collapsedControl"] {display: none !important;}
+    [data-testid="collapsedControl"] {visibility: hidden !important;}
+    div[data-testid="collapsedControl"] {visibility: hidden !important;}
+    [data-testid='stSidebar'][aria-expanded='true'] {display: none !important;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
     </style>
