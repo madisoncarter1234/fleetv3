@@ -711,15 +711,16 @@ def main():
     """Main app"""
     init_session_state()
     
-    # Pure Streamlit navbar using columns
-    navbar_col1, navbar_col2 = st.columns([4, 1])
-    
-    with navbar_col1:
-        st.markdown("### 🚛 FleetAudit.io")
-    
-    with navbar_col2:
-        if st.button("← Back to Home", key="home_nav_button"):
+    # Navbar layout
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        st.markdown("### 🚛 FleetAudit", unsafe_allow_html=True)
+    with col2:
+        if st.button("← Back to Home"):
             st.switch_page("app.py")
+    
+    # Button styling
+    st.markdown("<style>div.stButton > button { margin-top: 20px; }</style>", unsafe_allow_html=True)
     
     st.markdown("---")
     

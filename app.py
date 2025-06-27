@@ -509,45 +509,35 @@ def main():
     # Initialize session state first
     init_global_session_state()
     
-    # Pure Streamlit navbar using columns
-    navbar_col1, navbar_col2, navbar_col3, navbar_col4, navbar_col5 = st.columns([2, 1, 1, 1, 1.5])
-    
-    with navbar_col1:
-        st.markdown("### 🚛 FleetAudit.io")
-    
-    with navbar_col2:
-        if st.button("Features", key="nav_features"):
-            st.session_state.scroll_to = "features"
-    
-    with navbar_col3:
-        if st.button("Demo", key="nav_demo"):
-            st.session_state.scroll_to = "demo"
-    
-    with navbar_col4:
-        if st.button("Pricing", key="nav_pricing"):
-            st.session_state.scroll_to = "pricing"
-    
-    with navbar_col5:
-        if st.button("Try FleetAudit →", type="primary", key="try_app_button"):
+    # Navbar layout
+    col1, col2, col3, col4, col5 = st.columns([3, 1, 1, 1, 1])
+    with col1:
+        st.markdown("### 🚛 FleetAudit", unsafe_allow_html=True)
+    with col2:
+        st.button("Features")
+    with col3:
+        st.button("Demo")
+    with col4:
+        st.button("Pricing")
+    with col5:
+        if st.button("Try FleetAudit"):
             st.switch_page("pages/1_Product.py")
     
-    st.markdown("---")
+    # Button styling
+    st.markdown("<style>div.stButton > button { margin-top: 20px; }</style>", unsafe_allow_html=True)
     
-    # Handle scrolling if navigation was clicked
-    if st.session_state.get('scroll_to'):
-        target = st.session_state.scroll_to
-        st.markdown(f"""
-        <script>
-            setTimeout(function() {{
-                const element = document.getElementById('{target}');
-                if (element) {{
-                    element.scrollIntoView({{ behavior: 'smooth', block: 'start' }});
-                }}
-            }}, 100);
-        </script>
-        """, unsafe_allow_html=True)
-        # Clear the scroll target
-        del st.session_state.scroll_to
+    st.markdown(
+        """
+        <style>
+            .block-container {
+                padding-top: 4rem;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    st.markdown("---")
     
     # Hero Section - Science.io style
     st.markdown("""
