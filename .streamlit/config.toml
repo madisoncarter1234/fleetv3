@@ -1,9 +1,2 @@
-[server]
-port = 8501
-address = "0.0.0.0"
-
-[theme]
-primaryColor = "#2c3e50"
-backgroundColor = "#ffffff"
-secondaryBackgroundColor = "#f8f9fa"
-textColor = "#262730"
+[client]
+showSidebarNavigation = false
