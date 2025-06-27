@@ -1,16 +1,25 @@
 import streamlit as st
+
+st.set_page_config(
+    page_title="FleetAudit.io - Fleet Fraud Detection",
+    page_icon="🚛",
+    layout="wide", 
+    initial_sidebar_state="collapsed"
+)
+
+st.markdown("""
+    <style>
+    [data-testid="stSidebar"] {display: none !important;}
+    [data-testid="collapsedControl"] {display: none !important;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    </style>
+""", unsafe_allow_html=True)
+
 import pandas as pd
 import json
 from datetime import datetime, timedelta
 import random
-
-# Page config
-st.set_page_config(
-    page_title="FleetAudit.io - Fleet Fraud Detection",
-    page_icon="🚛",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
 
 # Custom CSS for landing page styling
 st.markdown("""

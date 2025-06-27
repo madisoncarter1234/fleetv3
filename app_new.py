@@ -1,16 +1,26 @@
 import streamlit as st
+
+st.set_page_config(
+    page_title="FleetAudit.io - Clean Version",
+    page_icon="🚛",
+    layout="wide", 
+    initial_sidebar_state="collapsed"
+)
+
+st.markdown("""
+    <style>
+    [data-testid="stSidebar"] {display: none !important;}
+    [data-testid="collapsedControl"] {display: none !important;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    </style>
+""", unsafe_allow_html=True)
+
 import pandas as pd
 import tempfile
 import os
 from datetime import datetime
 from anthropic import Anthropic
-
-# Page config
-st.set_page_config(
-    page_title="FleetAudit.io - Clean Version",
-    page_icon="🚛",
-    layout="wide"
-)
 
 def init_session_state():
     """Initialize session state"""
