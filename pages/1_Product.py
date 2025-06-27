@@ -32,6 +32,16 @@ try:
 except:
     pass  # Config already set
 
+# Hides the hamburger menu and Streamlit watermark
+hide_streamlit_style = """
+    <style>
+    [data-testid="collapsedControl"] {display: none}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    </style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 # Science.io-inspired CSS styling for Product page
 st.markdown("""
 <style>
@@ -766,19 +776,35 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     
-    col1, col2, col3 = st.columns(3, gap="large")
-    
+    upload_section()
+
+def upload_section():
+    col1, col2, col3 = st.columns(3)
+
     with col1:
-        st.subheader("⛽ Fuel Data Upload")
-        upload_fuel_data()
-    
+        st.markdown("""
+        <div style="background-color:white; padding:20px; border-radius:12px; box-shadow:0 0 10px rgba(0,0,0,0.05); text-align:center;">
+            <h4>⛽ Fuel Data Upload</h4>
+        """, unsafe_allow_html=True)
+        st.file_uploader("Upload Fuel CSV", type=["csv"], key="fuel", label_visibility="collapsed")
+        st.markdown("</div>", unsafe_allow_html=True)
+
     with col2:
-        st.subheader("🗺️ GPS Data Upload")
-        upload_gps_data()
-        
+        st.markdown("""
+        <div style="background-color:white; padding:20px; border-radius:12px; box-shadow:0 0 10px rgba(0,0,0,0.05); text-align:center;">
+            <h4>🗺️ GPS Data Upload</h4>
+        """, unsafe_allow_html=True)
+        st.file_uploader("Upload GPS CSV", type=["csv"], key="gps", label_visibility="collapsed")
+        st.markdown("</div>", unsafe_allow_html=True)
+
     with col3:
-        st.subheader("📋 Job Data Upload")
-        upload_job_data()
+        st.markdown("""
+        <div style="background-color:white; padding:20px; border-radius:12px; box-shadow:0 0 10px rgba(0,0,0,0.05); text-align:center;">
+            <h4>📋 Job Data Upload</h4>
+        """, unsafe_allow_html=True)
+        st.file_uploader("Upload Job CSV", type=["csv"], key="job", label_visibility="collapsed")
+        st.markdown("</div>", unsafe_allow_html=True)
+
     
     # Fraud detection
     detect_fraud()

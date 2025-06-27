@@ -25,6 +25,16 @@ try:
 except:
     pass  # Config already set
 
+# Hides the hamburger menu and Streamlit watermark
+hide_streamlit_style = """
+    <style>
+    [data-testid="collapsedControl"] {display: none}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    </style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 # Science.io-inspired CSS styling
 st.markdown("""
 <style>
