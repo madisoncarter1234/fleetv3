@@ -9,12 +9,28 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    [data-testid="stSidebar"] {display: none !important;}
-    [data-testid="collapsedControl"] {visibility: hidden !important;}
-    div[data-testid="collapsedControl"] {visibility: hidden !important;}
-    [data-testid='stSidebar'][aria-expanded='true'] {display: none !important;}
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
+    /* Hide sidebar */
+    [data-testid="stSidebar"] {
+        visibility: hidden;
+        width: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Hide hamburger menu */
+    [data-testid="collapsedControl"] {
+        display: none !important;
+    }
+
+    /* Optional: Hide Streamlit's top padding space if still showing */
+    section.main > div:has(div.block-container) {
+        padding-top: 1rem !important;
+    }
+
+    /* Hide footer and header if needed */
+    footer, header {
+        visibility: hidden;
+    }
     </style>
 """, unsafe_allow_html=True)
 
