@@ -228,8 +228,10 @@ st.markdown("""
     .stMainBlockContainer {padding-top: 0;}
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
-    .stSidebar {display: none;}
-    section[data-testid="stSidebar"] {display: none;}
+    .stSidebar {display: none !important;}
+    section[data-testid="stSidebar"] {display: none !important;}
+    .css-1d391kg {display: none !important;}
+    .css-1lcbmhc {display: none !important;}
     
     /* Section headings */
     .section-heading {
@@ -767,25 +769,16 @@ def main():
     col1, col2, col3 = st.columns(3, gap="large")
     
     with col1:
-        with st.container():
-            st.markdown('<div class="upload-section">', unsafe_allow_html=True)
-            st.markdown('<h3 style="color: #111827; font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">⛽ Fuel Data Upload</h3>', unsafe_allow_html=True)
-            upload_fuel_data()
-            st.markdown('</div>', unsafe_allow_html=True)
+        st.subheader("⛽ Fuel Data Upload")
+        upload_fuel_data()
     
     with col2:
-        with st.container():
-            st.markdown('<div class="upload-section">', unsafe_allow_html=True)
-            st.markdown('<h3 style="color: #111827; font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">🗺️ GPS Data Upload</h3>', unsafe_allow_html=True)
-            upload_gps_data()
-            st.markdown('</div>', unsafe_allow_html=True)
+        st.subheader("🗺️ GPS Data Upload")
+        upload_gps_data()
         
     with col3:
-        with st.container():
-            st.markdown('<div class="upload-section">', unsafe_allow_html=True)
-            st.markdown('<h3 style="color: #111827; font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">📋 Job Data Upload</h3>', unsafe_allow_html=True)
-            upload_job_data()
-            st.markdown('</div>', unsafe_allow_html=True)
+        st.subheader("📋 Job Data Upload")
+        upload_job_data()
     
     # Fraud detection
     detect_fraud()
