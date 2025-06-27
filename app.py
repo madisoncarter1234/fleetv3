@@ -1,4 +1,21 @@
 import streamlit as st
+
+st.set_page_config(
+    page_title="FleetAudit.io - Fleet Fraud Detection",
+    page_icon="🚛",
+    layout="wide", 
+    initial_sidebar_state="collapsed"
+)
+
+st.markdown("""
+    <style>
+    [data-testid="stSidebar"] {display: none !important;}
+    [data-testid="collapsedControl"] {display: none !important;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    </style>
+""", unsafe_allow_html=True)
+
 import pandas as pd
 import json
 from datetime import datetime, timedelta
@@ -13,25 +30,6 @@ try:
         st.error(f"⚠️ Streamlit {st_version} detected. Multipage requires 1.10+")
 except:
     pass
-
-# Page config with error handling
-st.set_page_config(
-    page_title="FleetAudit.io - Fleet Fraud Detection", 
-    page_icon="🚛",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
-
-st.markdown(
-    """
-<style>
-    [data-testid="collapsedControl"] {
-        display: none
-    }
-</style>
-""",
-    unsafe_allow_html=True,
-)
 
 # Science.io-inspired CSS styling
 st.markdown("""
