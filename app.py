@@ -20,7 +20,7 @@ try:
         page_title="FleetAudit.io - Fleet Fraud Detection",
         page_icon="🚛",
         layout="wide",
-        initial_sidebar_state="expanded"
+        initial_sidebar_state="collapsed"
     )
 except:
     pass  # Config already set
@@ -260,6 +260,8 @@ st.markdown("""
     .stMainBlockContainer {padding-top: 0;}
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
+    .stSidebar {display: none;}
+    section[data-testid="stSidebar"] {display: none;}
     
     /* Navigation button styling */
     div[data-testid="column"]:nth-child(2) .stButton > button,
