@@ -9,27 +9,22 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    /* Hide sidebar */
-    [data-testid="stSidebar"] {
-        visibility: hidden;
-        width: 0 !important;
-        padding: 0 !important;
-        margin: 0 !important;
-    }
-
-    /* Hide hamburger menu */
-    [data-testid="collapsedControl"] {
+    /* Obliterate sidebar */
+    [data-testid="stSidebar"], [data-testid="collapsedControl"] {
         display: none !important;
+        width: 0 !important;
+        visibility: hidden !important;
     }
 
-    /* Optional: Hide Streamlit's top padding space if still showing */
-    section.main > div:has(div.block-container) {
-        padding-top: 1rem !important;
+    /* Remove left margin */
+    .css-1d391kg {
+        margin-left: 0 !important;
     }
 
-    /* Hide footer and header if needed */
-    footer, header {
-        visibility: hidden;
+    /* Remove Streamlit's auto padding */
+    section.main > div:first-child {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
     }
     </style>
 """, unsafe_allow_html=True)
